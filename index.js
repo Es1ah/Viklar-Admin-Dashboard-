@@ -4,7 +4,7 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-const { handleIncoming } = require('./src/handler');
+const { handleWebhook } = require('./src/handler');
 const { listRequisitions } = require('./src/sheets');
 
 const app = express();
@@ -524,14 +524,11 @@ app.get('/webhook', (req, res) => {
     return res.sendStatus(403);
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Webhook HANDLER (POST) - Messages
 // ─────────────────────────────────────────────────────────────────────────────
 app.post('/webhook', async (req, res) => {
-    res.sendStatus(200); // Meta needs immediate 200
-
     try {
-        await handleIncoming(req.body);
+        await handleWebhook(req, res);
     } catch (err) {
         console.error('[POST /webhook] Error processing message:', err.message);
     }

@@ -210,6 +210,16 @@ async function notifyAdmins(requesterPhone, persona, purpose, amount, requestId)
     }
 }
 
+async function handleWebhook(req, res) {
+    try {
+        await handleIncoming(req.body);
+        if (!res.headersSent) res.sendStatus(200);
+    } catch (err) {
+        console.error('[handleWebhook] Error:', err.message);
+        if (!res.headersSent) res.status(500).send(err.message);
+    }
+}
+
 async function handleIncoming(body) {
     const parsed = parseMessage(body);
     if (!parsed) return;
@@ -222,4 +232,4 @@ async function handleIncoming(body) {
     }
 }
 
-module.exports = { handleIncoming };
+module.exports = { handleWebhook };
