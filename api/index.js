@@ -1,10 +1,11 @@
 const express = require('express');
-const app = express();
 const { handleWebhook } = require('../src/handler');
+const mainApp = require('../index'); // Import the full dashboard application
 
+const app = express();
 app.use(express.json());
 
-// Webhook Verification
+// 1. Webhook Verification
 app.get('/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
@@ -16,9 +17,14 @@ app.get('/webhook', (req, res) => {
   return res.sendStatus(403);
 });
 
-// Webhook Handler
+// 2. Webhook Handler
 app.post('/webhook', async (req, res) => {
   await handleWebhook(req, res);
+});
+
+// 3. Fallback to Dashboard
+app.all('*', (req, res) => {
+  return mainApp(req, res);
 });
 
 // For Vercel Serverless
