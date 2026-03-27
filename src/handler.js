@@ -1,6 +1,6 @@
 'use strict';
 
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const { getSession, updateSession, clearSession } = require('./sessions');
 const { sendText, sendButtons } = require('./whatsapp');
 const { appendRequisition, updateRequisitionStatus, getRequisition } = require('./sheets');
@@ -178,7 +178,7 @@ async function handleRequesterMessage(from, text) {
         }
         case 'AWAIT_CONFIRM': {
             if (text.toLowerCase().includes('yes')) {
-                const requestId = 'REQ-' + uuidv4().split('-')[0].toUpperCase();
+                const requestId = 'REQ-' + crypto.randomBytes(4).toString('hex').toUpperCase();
                 const s = await getSession(from);
                 await updateSession(from, { requestId, step: 'DONE' });
                 await appendRequisition({ phone: from, persona: s.persona, purpose: s.purpose, amount: s.amount, requestId });
