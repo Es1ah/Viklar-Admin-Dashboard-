@@ -8,12 +8,27 @@ const SHEET_NAME = 'Sheet1'; // Change if your tab has a different name
  * Build an authorized Sheets client from the GOOGLE_CREDENTIALS env var.
  */
 function getSheetsClient() {
-  const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
-  const auth = new google.auth.GoogleAuth({
-    credentials,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-  return google.sheets({ version: 'v4', auth });
+  try {
+    const raw = process.env.GOOGLE_CREDENTIALS || '{}';
+    // Clean up potential escaped newlines if the string was double-quoted in Vercel
+    const cleanJson = raw.trim();
+    const credentials = JSON.parse(cleanJson);
+    
+    // Ensure the private key handles newlines correctly
+    if (credentials.private_key) {
+      credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+    }
+
+    const auth = new google.auth.GoogleAuth({
+      credentials,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    return google.sheets({ version: 'v4', auth });
+  } catch (err) {
+    console.error('[Sheets] CRITICAL: Failed to parse GOOGLE_CREDENTIALS. Check your Vercel Environment Variables.');
+    console.error('[Sheets] Error Detail:', err.message);
+    throw new Error('GOOGLE_CREDENTIALS_PARSE_FAILED');
+  }
 }
 
 /**

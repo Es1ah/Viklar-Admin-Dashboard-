@@ -12,8 +12,12 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
 let supabase = null;
-if (supabaseUrl && supabaseKey && supabaseUrl !== 'your_supabase_url_here') {
-    supabase = createClient(supabaseUrl, supabaseKey);
+try {
+    if (supabaseUrl && supabaseKey && supabaseUrl.startsWith('http')) {
+        supabase = createClient(supabaseUrl, supabaseKey);
+    }
+} catch (err) {
+    console.error('[Sessions] Supabase Init Error:', err.message);
 }
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
