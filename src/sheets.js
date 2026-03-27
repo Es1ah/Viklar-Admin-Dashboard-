@@ -9,10 +9,13 @@ const SHEET_NAME = 'Sheet1'; // Change if your tab has a different name
  */
 function getSheetsClient() {
   try {
-    const raw = process.env.GOOGLE_CREDENTIALS || '{}';
-    // Clean up potential escaped newlines if the string was double-quoted in Vercel
-    const cleanJson = raw.trim();
-    const credentials = JSON.parse(cleanJson);
+    let raw = (process.env.GOOGLE_CREDENTIALS || '').trim();
+    
+    // Auto-repair missing braces (common paste error)
+    if (raw && !raw.startsWith('{')) raw = '{' + raw;
+    if (raw && !raw.endsWith('}')) raw = raw + '}';
+
+    const credentials = JSON.parse(raw);
     
     // Ensure the private key handles newlines correctly
     if (credentials.private_key) {
@@ -25,9 +28,8 @@ function getSheetsClient() {
     });
     return google.sheets({ version: 'v4', auth });
   } catch (err) {
-    console.error('[Sheets] CRITICAL: Failed to parse GOOGLE_CREDENTIALS. Check your Vercel Environment Variables.');
-    console.error('[Sheets] Error Detail:', err.message);
-    throw new Error('GOOGLE_CREDENTIALS_PARSE_FAILED');
+    console.error('[Sheets] CRITICAL: Failed to parse GOOGLE_CREDENTIALS.', err.message);
+    throw new Error('GOOGLE_CREDENTIALS_PARSE_FAILED: ' + err.message);
   }
 }
 
