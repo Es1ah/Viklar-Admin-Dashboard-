@@ -1,6 +1,15 @@
 'use strict';
 
 require('dotenv').config();
+
+// Global Repair for Google Credentials
+if (process.env.GOOGLE_CREDENTIALS) {
+  let raw = process.env.GOOGLE_CREDENTIALS.trim();
+  if (raw && !raw.startsWith('{')) raw = '{' + raw;
+  if (raw && !raw.endsWith('}')) raw = raw + '}';
+  process.env.GOOGLE_CREDENTIALS = raw;
+}
+
 const fs = require('fs');
 const path = require('path');
 const express = require('express');

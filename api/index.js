@@ -1,8 +1,10 @@
 'use strict';
 
-// Require the main application file (index.js).
-// Since it exports the 'app' instance, Vercel will use it as the entry point.
+/**
+ * Clean Vercel Entry Point.
+ * We simply export the main 'app' instance from index.js. 
+ * This ensures that the Dashboard, Webhooks, and Settings all work in sync.
+ */
 const app = require('../index');
 
-// Vercel serverless functions must export the Express app
 module.exports = app;
