@@ -1,59 +1,91 @@
 'use strict';
 
-const axios = require('axios');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { Boom } = require('@hapi/boom');
+const qrcode = require('qrcode-terminal');
+const pino = require('pino');
+const path = require('path');
 
-// WATI uses a different base URL structure
-// Note: Some WATI regions use local URLs like https://api.wati.io/
-const BASE_URL = `https://api.wati.io/api/v1`;
+let sock = null;
 
 /**
- * Low-level POST to the WATI API.
+ * Initialize WhatsApp connection using Baileys.
+ * This will handle QR code generation and session management.
  */
-async function callWATI(endpoint, payload, params = {}) {
-    const url = `${BASE_URL}/${endpoint}`;
-    try {
-        const res = await axios.post(url, payload, {
-            params,
-            headers: {
-                Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-                'Content-Type': 'application/json',
-            },
-        });
-        return res.data;
-    } catch (err) {
-        const msg = err.response?.data || err.message;
-        console.error('[WATI API Error]', JSON.stringify(msg, null, 2));
-        throw err;
-    }
+async function connectWhatsApp(handleIncomingMessage) {
+    const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, '../auth_info_baileys'));
+
+    sock = makeWASocket({
+        logger: pino({ level: 'silent' }),
+        auth: state,
+        printQRInTerminal: true,
+        browser: ['ViKLAR Bot', 'Chrome', '1.0.0']
+    });
+
+    sock.ev.on('creds.update', saveCreds);
+
+    sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect, qr } = update;
+
+        if (qr) {
+            console.log('\n⚠️  ACTION REQUIRED: Scan the QR code below with your WhatsApp (MTN SIM phone):');
+            qrcode.generate(qr, { small: true });
+        }
+
+        if (connection === 'close') {
+            const shouldReconnect = (lastDisconnect.error instanceof Boom) ? 
+                lastDisconnect.error.output.statusCode !== DisconnectReason.loggedOut : true;
+            
+            console.log('🔄 Connection closed. Reason:', lastDisconnect.error?.message, 'Reconnecting:', shouldReconnect);
+            
+            if (shouldReconnect) {
+                connectWhatsApp(handleIncomingMessage);
+            }
+        } else if (connection === 'open') {
+            console.log('\n✅ ViKLAR Bot Connected - MTN SIM Ready');
+        }
+    });
+
+    sock.ev.on('messages.upsert', async (m) => {
+        if (m.type === 'notify') {
+            for (const msg of m.messages) {
+                if (!msg.key.fromMe && handleIncomingMessage) {
+                    await handleIncomingMessage(msg, sock);
+                }
+            }
+        }
+    });
+
+    return sock;
 }
 
 /**
- * Send a plain-text session message.
- * @param {string} to   Recipient phone without '+'
- * @param {string} text Message body
+ * Send a plain-text message.
  */
 async function sendText(to, text) {
-    return callWATI(`sendSessionMessage/${to}`, {
-        messageText: text
-    });
+    if (!sock) throw new Error('WhatsApp socket not initialized.');
+    const jid = to.includes('@') ? to : `${to.replace(/\D/g, '')}@s.whatsapp.net`;
+    await sock.sendMessage(jid, { text });
 }
 
 /**
  * Send interactive buttons.
- * @param {string} to
- * @param {string} bodyText   Main message body
- * @param {string} btn1Title  Label for button 1
- * @param {string} btn2Title  Label for button 2
  */
 async function sendButtons(to, bodyText, btn1Title, btn2Title) {
-    // WATI uses a slightly different endpoint for interactive buttons
-    return callWATI(`sendInteractiveButtonsMessage`, {
-        body: bodyText,
-        buttons: [
-            { text: btn1Title },
-            { text: btn2Title }
-        ]
-    }, { whatsappNumber: to });
+    if (!sock) throw new Error('WhatsApp socket not initialized.');
+    const jid = to.includes('@') ? to : `${to.replace(/\D/g, '')}@s.whatsapp.net`;
+    
+    // Note: Baileys interactive buttons are sometimes tricky depending on the WhatsApp version.
+    // Using a simpler template message or just plain text with instructions if buttons fail.
+    try {
+        await sock.sendMessage(jid, {
+            text: `${bodyText}\n\n1️⃣ ${btn1Title}\n2️⃣ ${btn2Title}`,
+            footer: 'ViKLAR Requisition Bot'
+        });
+    } catch (err) {
+        console.error('[WhatsApp] Failed to send buttons:', err.message);
+        await sendText(jid, `${bodyText}\n\nType "${btn1Title}" or "${btn2Title}" to respond.`);
+    }
 }
 
-module.exports = { sendText, sendButtons };
+module.exports = { connectWhatsApp, sendText, sendButtons };

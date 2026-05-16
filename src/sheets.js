@@ -166,10 +166,90 @@ async function listRequisitions() {
             status: row[5] || '',
             requestId: row[6] || '',
         })).reverse(); // latest first
+/**
+ * Fetch all users/employees from the Users tab.
+ */
+async function listUsers() {
+    try {
+        const sheets = getSheetsClient();
+        const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+
+        const res = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: `Users!A:G`,
+        });
+
+        const rows = res.data.values || [];
+        if (rows.length <= 1) return [];
+
+        const dataRows = rows.slice(1);
+        return dataRows.map(row => ({
+            phone: row[0] || '',
+            name: row[1] || '',
+            email: row[2] || '',
+            role: row[3] || 'Employee',
+            department: row[4] || '',
+            status: row[6] || 'Active'
+        }));
     } catch (err) {
-        console.error('[Sheets] listRequisitions error:', err.message);
+        console.error('[Sheets] listUsers error:', err.message);
         return [];
     }
 }
 
-module.exports = { appendRequisition, updateRequisitionStatus, listRequisitions, getRequisition };
+/**
+ * Fetch all automated messages.
+ */
+async function listAutomatedMessages() {
+    try {
+        const sheets = getSheetsClient();
+        const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+
+        const res = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: `AutomatedMessages!A:J`,
+        });
+
+        const rows = res.data.values || [];
+        if (rows.length <= 1) return [];
+
+        return rows.slice(1).map(row => ({
+            id: row[0],
+            name: row[1],
+            trigger: row[2],
+            message: row[3],
+            recipient: row[4],
+            frequency: row[5],
+            day: row[6],
+            time: row[7],
+            status: row[8]
+        }));
+    } catch (err) {
+        console.error('[Sheets] listAutomatedMessages error:', err.message);
+        return [];
+    }
+}
+
+/**
+ * Append a record to the Audit Log.
+ */
+async function logAudit(user, action, details) {
+    try {
+        const sheets = getSheetsClient();
+        const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+        const timestamp = new Date().toLocaleString('en-GB', { timeZone: 'Africa/Lagos' });
+
+        await sheets.spreadsheets.values.append({
+            spreadsheetId,
+            range: `AuditLog!A:D`,
+            valueInputOption: 'USER_ENTERED',
+            requestBody: {
+                values: [[timestamp, user, action, details]],
+            },
+        });
+    } catch (err) {
+        console.error('[Sheets] logAudit error:', err.message);
+    }
+}
+
+module.exports = { appendRequisition, updateRequisitionStatus, listRequisitions, getRequisition, listUsers, listAutomatedMessages, logAudit };
