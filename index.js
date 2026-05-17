@@ -15,7 +15,7 @@ const path = require('path');
 const express = require('express');
 const { connectWhatsApp, sendText, sendButtons } = require('./src/whatsapp');
 const { handleWebhook } = require('./src/handler');
-const { listRequisitions, listUsers, logAudit } = require('./src/sheets');
+const { listRequisitions, listUsers, logAudit, appendRequisition } = require('./src/sheets');
 const { initAutomation } = require('./src/automation');
 const { authenticate } = require('./src/auth');
 const { uploadToDrive } = require('./src/drive');
@@ -46,6 +46,36 @@ app.get('/', async (req, res) => {
     const renderDashboard = require('./src/dashboardView');
     const html = renderDashboard({ requisitions, env: process.env });
     res.send(html);
+});
+
+// ── API: Web Requisition (Quick Create) ──────────────────────────────────────
+app.post('/api/requisition', upload.single('file'), async (req, res) => {
+    try {
+        const { purpose, amount, phone, persona } = req.body;
+        let finalPurpose = purpose;
+        
+        if (req.file) {
+            const fileLink = await uploadToDrive(req.file.path, `ReqImage_${Date.now()}_${phone}`, req.file.mimetype);
+            fs.unlinkSync(req.file.path);
+            finalPurpose += ` (Image Attached: ${fileLink})`;
+        }
+
+        const requestId = Math.floor(1000 + Math.random() * 9000).toString();
+        
+        await appendRequisition({
+            phone: phone || 'Web User',
+            persona: persona || 'Employee',
+            purpose: finalPurpose,
+            amount: amount,
+            requestId: requestId
+        });
+
+        await logAudit(phone, 'Requisition', `Created web requisition for ${amount}`);
+        res.json({ success: true, requestId });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // ── API: Job Forms (Upload) ──────────────────────────────────────────────────

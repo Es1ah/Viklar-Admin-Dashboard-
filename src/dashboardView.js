@@ -1,4 +1,12 @@
 module.exports = function renderDashboard({ requisitions, env }) {
+    const getBadgeClass = (status) => {
+        const s = (status || '').toLowerCase();
+        if (s.includes('approved') || s.includes('completed') || s.includes('success')) return 'bg-success/20 text-success';
+        if (s.includes('rejected') || s.includes('error')) return 'bg-error/20 text-error';
+        if (s.includes('pending')) return 'bg-warning/20 text-warning';
+        return 'bg-surface-container-highest text-primary';
+    };
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -332,7 +340,7 @@ module.exports = function renderDashboard({ requisitions, env }) {
                                                     <td class="px-6 py-4 text-body-md font-body-md text-on-surface-variant">\${r.timestamp.split(',')[0]}</td>
                                                     <td class="px-6 py-4 font-label-bold text-on-surface">\${r.amount}</td>
                                                     <td class="px-6 py-4">
-                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container-highest text-primary">\${r.status}</span>
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-label-sm font-label-sm \${getBadgeClass(r.status)}">\${r.status}</span>
                                                     </td>
                                                 </tr>
                                             \`).join('')}
@@ -346,26 +354,22 @@ module.exports = function renderDashboard({ requisitions, env }) {
                         <div class="xl:col-span-4 space-y-gutter">
                             <div class="p-6 bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow">
                                 <h3 class="font-headline-md text-headline-md mb-4">Quick Create</h3>
-                                <form class="space-y-4">
+                                <form id="quick-create-form" class="space-y-4">
                                     <div>
-                                        <label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">Item Category</label>
-                                        <select class="w-full rounded-lg border-outline-variant/30 text-body-md font-body-md focus:border-primary focus:ring-primary p-2">
-                                            <option>Office Supplies</option>
-                                            <option>Hardware/IT</option>
-                                            <option>Travel/Expenses</option>
-                                        </select>
+                                        <label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">Purpose / Items Needed</label>
+                                        <input id="quick-purpose" class="w-full rounded-lg border-outline-variant/30 text-body-md font-body-md focus:border-primary focus:ring-primary p-2" type="text" placeholder="e.g. 5 bags of cement, new laptop..." required/>
                                     </div>
                                     <div class="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">Quantity</label>
-                                            <input class="w-full rounded-lg border-outline-variant/30 text-body-md font-body-md focus:border-primary focus:ring-primary p-2" type="number" value="1"/>
+                                            <label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">Amount / Cost</label>
+                                            <input id="quick-amount" class="w-full rounded-lg border-outline-variant/30 text-body-md font-body-md focus:border-primary focus:ring-primary p-2" type="text" placeholder="e.g. 50000" required/>
                                         </div>
                                         <div>
-                                            <label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">Estimated Cost</label>
-                                            <input class="w-full rounded-lg border-outline-variant/30 text-body-md font-body-md focus:border-primary focus:ring-primary p-2" placeholder="$0.00" type="text"/>
+                                            <label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">Image (Optional)</label>
+                                            <input id="quick-image" class="w-full rounded-lg border-outline-variant/30 text-body-md font-body-md focus:border-primary focus:ring-primary p-1.5 bg-surface-container-low" type="file" accept="image/*"/>
                                         </div>
                                     </div>
-                                    <button class="w-full bg-secondary-container text-on-secondary py-3 rounded-lg font-label-bold text-label-bold transition-all active:translate-y-0.5 hover:brightness-95" type="button">
+                                    <button type="button" onclick="submitQuickReq()" class="w-full bg-secondary-container text-on-secondary py-3 rounded-lg font-label-bold text-label-bold transition-all active:translate-y-0.5 hover:brightness-95">
                                         Submit Requisition
                                     </button>
                                 </form>
@@ -384,11 +388,11 @@ module.exports = function renderDashboard({ requisitions, env }) {
                             <table class="w-full text-left">
                                 <thead class="bg-surface-container-low border-y border-outline-variant/20">
                                     <tr>
-                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">ID</th>
-                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Requester</th>
-                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Purpose</th>
-                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Amount</th>
-                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Status</th>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase whitespace-nowrap">ID</th>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase whitespace-nowrap">Requester</th>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase whitespace-nowrap">Purpose</th>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase whitespace-nowrap">Amount</th>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase whitespace-nowrap">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-outline-variant/20">
@@ -399,7 +403,7 @@ module.exports = function renderDashboard({ requisitions, env }) {
                                             <td class="px-6 py-4 text-body-md font-body-md text-on-surface-variant max-w-[200px] truncate">\${r.purpose}</td>
                                             <td class="px-6 py-4 font-label-bold text-on-surface">\${r.amount}</td>
                                             <td class="px-6 py-4">
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container-highest text-primary">\${r.status}</span>
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-label-sm font-label-sm \${getBadgeClass(r.status)}">\${r.status}</span>
                                             </td>
                                         </tr>
                                     \`).join('')}
@@ -695,6 +699,41 @@ module.exports = function renderDashboard({ requisitions, env }) {
             const titleSpan = btn.querySelector('span:nth-child(2)');
             if(titleSpan) {
                 document.getElementById('view-title').innerText = titleSpan.innerText;
+            }
+        }
+
+        async function submitQuickReq() {
+            const purpose = document.getElementById('quick-purpose').value;
+            const amount = document.getElementById('quick-amount').value;
+            const imageFile = document.getElementById('quick-image').files[0];
+
+            if (!purpose || !amount) return alert('Purpose and Amount are required.');
+
+            const formData = new FormData();
+            formData.append('purpose', purpose);
+            formData.append('amount', amount);
+            formData.append('phone', currentUser.phone);
+            formData.append('persona', currentUser.role);
+            if (imageFile) formData.append('file', imageFile);
+
+            const btn = document.querySelector('#quick-create-form button');
+            btn.innerText = 'Submitting...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/requisition', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Requisition submitted successfully! ID: #' + data.requestId);
+                    location.reload();
+                } else {
+                    alert('Failed to submit: ' + data.error);
+                }
+            } catch (e) {
+                alert('Connection error');
+            } finally {
+                btn.innerText = 'Submit Requisition';
+                btn.disabled = false;
             }
         }
 
