@@ -166,6 +166,12 @@ async function listRequisitions() {
             status: row[5] || '',
             requestId: row[6] || '',
         })).reverse(); // latest first
+    } catch (err) {
+        console.error('[Sheets] listRequisitions error:', err.message);
+        return [];
+    }
+}
+
 /**
  * Fetch all users/employees from the Users tab.
  */

@@ -13,7 +13,7 @@ if (process.env.GOOGLE_CREDENTIALS) {
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-const { connectWhatsApp, sendText, sendButtons } = require('./whatsapp');
+const { connectWhatsApp, sendText, sendButtons } = require('./src/whatsapp');
 const { handleWebhook } = require('./src/handler');
 const { listRequisitions, listUsers, logAudit } = require('./src/sheets');
 const { initAutomation } = require('./src/automation');
@@ -364,10 +364,10 @@ app.get('/', async (req, res) => {
                                         <tbody>
                                             ${requisitions.slice(0, 5).map(r => `
                                                 <tr>
-                                                    <td style="font-weight: 700; color: var(--viklar-blue);">#${r.requestId}</td>
-                                                    <td>${r.timestamp.split(',')[0]}</td>
-                                                    <td style="font-weight: 700;">${r.amount}</td>
-                                                    <td><span class="badge badge-${(r.status || 'pending').toLowerCase()}">${r.status}</span></td>
+                                                    <td style="font-weight: 700; color: var(--viklar-blue);">#\${r.requestId}</td>
+                                                    <td>\${r.timestamp.split(',')[0]}</td>
+                                                    <td style="font-weight: 700;">\${r.amount}</td>
+                                                    <td><span class="badge badge-\${(r.status || 'pending').toLowerCase()}">\${r.status}</span></td>
                                                 </tr>
                                             `).join('')}
                                         </tbody>
@@ -417,11 +417,11 @@ app.get('/', async (req, res) => {
                                 <tbody>
                                     ${requisitions.map(r => `
                                         <tr>
-                                            <td style="font-weight: 700; color: var(--viklar-blue);">#${r.requestId}</td>
-                                            <td>+${r.phone}</td>
-                                            <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r.purpose}</td>
-                                            <td style="font-weight: 700;">${r.amount}</td>
-                                            <td><span class="badge badge-${(r.status || 'pending').toLowerCase()}">${r.status}</span></td>
+                                            <td style="font-weight: 700; color: var(--viklar-blue);">#\${r.requestId}</td>
+                                            <td>+\${r.phone}</td>
+                                            <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">\${r.purpose}</td>
+                                            <td style="font-weight: 700;">\${r.amount}</td>
+                                            <td><span class="badge badge-\${(r.status || 'pending').toLowerCase()}">\${r.status}</span></td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -668,7 +668,7 @@ app.get('/', async (req, res) => {
                 
                 let html = '';
                 if (currentUser.role === 'CEO' || currentUser.role === 'Admin') {
-                    html = `
+                    html = \`
                         <div class="card">
                             <div class="card-title">Bot Status</div>
                             <div class="stat-val" style="color: var(--success);">LIVE</div>
@@ -684,9 +684,9 @@ app.get('/', async (req, res) => {
                             <div class="stat-val" style="color: var(--pending);">45</div>
                             <div class="stat-delta">Action required</div>
                         </div>
-                    `;
+                    \`;
                 } else {
-                    html = `
+                    html = \`
                         <div class="card">
                             <div class="card-title">My Requisitions</div>
                             <div class="stat-val">12</div>
@@ -697,7 +697,7 @@ app.get('/', async (req, res) => {
                             <div class="stat-val">5</div>
                             <div class="stat-delta">All verified</div>
                         </div>
-                    `;
+                    \`;
                 }
                 stats.innerHTML = html;
             }
@@ -707,23 +707,23 @@ app.get('/', async (req, res) => {
                     const res = await fetch('/api/users');
                     const users = await res.json();
                     const tbody = document.getElementById('users-tbody');
-                    tbody.innerHTML = users.map(u => `
+                    tbody.innerHTML = users.map(u => \`
                         <tr>
                             <td>
                                 <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                    <div class="avatar" style="width: 30px; height: 30px; font-size: 0.7rem;">${u.name[0]}</div>
-                                    <span style="font-weight: 600;">${u.name}</span>
+                                    <div class="avatar" style="width: 30px; height: 30px; font-size: 0.7rem;">\${u.name[0]}</div>
+                                    <span style="font-weight: 600;">\${u.name}</span>
                                 </div>
                             </td>
-                            <td>${u.phone}</td>
-                            <td>${u.department}</td>
-                            <td><span class="badge badge-blue">${u.role}</span></td>
+                            <td>\${u.phone}</td>
+                            <td>\${u.department}</td>
+                            <td><span class="badge badge-blue">\${u.role}</span></td>
                             <td>
                                 <i class="fa-solid fa-pen-to-square" style="color: var(--text-secondary); cursor: pointer; margin-right: 1rem;"></i>
                                 <i class="fa-solid fa-trash" style="color: #ef4444; cursor: pointer;"></i>
                             </td>
                         </tr>
-                    `).join('');
+                    \`).join('');
                 } catch (e) {}
             }
 
