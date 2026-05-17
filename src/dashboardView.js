@@ -1,15 +1,12 @@
-module.exports = (requisitions, process) => `
-<!DOCTYPE html>
+module.exports = function renderDashboard({ requisitions, env }) {
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>ViKLAR | Employee Dashboard</title>
-    <link rel="icon" href="/logo.png" type="image/png">
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script id="tailwind-config">
         tailwind.config = {
@@ -90,8 +87,7 @@ module.exports = (requisitions, process) => `
                         "headline-md": ["Inter"],
                         "headline-xl": ["Inter"],
                         "body-md": ["Inter"],
-                        "label-sm": ["Inter"],
-                        "outfit": ["Outfit", "sans-serif"]
+                        "label-sm": ["Inter"]
                     },
                     "fontSize": {
                         "label-bold": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
@@ -107,93 +103,97 @@ module.exports = (requisitions, process) => `
         }
     </script>
     <style>
-        body { background-color: #F1F5F9; font-family: 'Inter', sans-serif; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .custom-card-shadow { box-shadow: 0px 4px 12px rgba(30, 41, 59, 0.05); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .view { display: none; animation: fadeIn 0.3s ease; }
-        .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .nav-item.active { background: rgba(255,255,255,0.2); }
-        .hidden { display: none !important; }
-        .auth-input:focus { outline: none; border-color: var(--viklar-blue); box-shadow: 0 0 0 3px rgba(46, 49, 146, 0.1); }
+        body {
+            background-color: #F1F5F9;
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-card-shadow {
+            box-shadow: 0px 4px 12px rgba(30, 41, 59, 0.05);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* --- Auth Flows --- */
+        .auth-overlay { position: fixed; inset: 0; background: #2E3192; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .auth-container { display: flex; background: white; width: 1000px; height: 650px; border-radius: 1.5rem; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .auth-sidebar { width: 35%; background: #2E3192; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem; color: white; position: relative; }
+        .auth-content { flex: 1; padding: 4rem; display: flex; flex-direction: column; justify-content: center; position: relative; }
+        .auth-title { font-family: 'Inter', sans-serif; font-size: 1.75rem; color: #2E3192; margin-bottom: 0.5rem; font-weight: 700; }
+        .auth-subtitle { color: #64748B; margin-bottom: 2.5rem; font-size: 0.95rem; }
+        .input-group { margin-bottom: 1.5rem; }
+        .input-label { display: block; font-size: 0.85rem; font-weight: 600; color: #1E293B; margin-bottom: 0.5rem; }
+        .auth-input { width: 100%; padding: 0.875rem 1rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; font-family: inherit; font-size: 1rem; background: #F8FAFC; transition: all 0.2s; }
+        .otp-container { display: flex; gap: 0.75rem; margin-bottom: 2rem; }
+        .otp-input { width: 3.5rem; height: 3.5rem; text-align: center; font-size: 1.5rem; font-weight: 700; border-radius: 0.75rem; border: 2px solid #E2E8F0; background: #F8FAFC; }
+        .btn-primary { background: #F7941D; color: white; border: none; padding: 0.875rem 2rem; border-radius: 0.5rem; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: inherit; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge { padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+        .badge-blue { background: #DBEAFE; color: #1E40AF; }
         .badge-success { background: #DCFCE7; color: #166534; }
         .badge-pending { background: #FEF3C7; color: #92400E; }
-        .badge-blue { background: #DBEAFE; color: #1E40AF; }
+
+        .view { display: none; }
+        .view.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="min-h-screen text-on-surface">
 
     <!-- 1. LOGIN OVERLAY -->
-    <div id="login-flow" class="fixed inset-0 bg-primary z-[1000] flex items-center justify-center">
-        <div class="flex bg-surface w-[1000px] h-[650px] rounded-[1.5rem] overflow-hidden shadow-2xl">
-            <div class="w-[35%] bg-primary flex flex-col items-center justify-center p-12 text-white relative">
+    <div id="login-flow" class="auth-overlay">
+        <div class="auth-container">
+            <div class="auth-sidebar">
                 <img src="/logo.png" style="height: 80px; filter: brightness(0) invert(1); position: relative; z-index: 1;">
-                <div class="mt-8 text-center relative z-10">
-                    <h2 class="font-outfit text-2xl font-bold">ViKLAR Technologies</h2>
-                    <p class="opacity-70 text-sm mt-2">Automating Operations for Africa's Infrastructure</p>
+                <div style="margin-top: 2rem; text-align: center; position: relative; z-index: 1;">
+                    <h2>ViKLAR Technologies</h2>
+                    <p style="opacity: 0.7; font-size: 0.9rem;">Automating Operations for Africa's Infrastructure</p>
                 </div>
             </div>
-            <div class="flex-1 p-16 flex flex-col justify-center" id="login-step-1">
-                <h1 class="font-outfit text-3xl text-primary font-bold mb-2">Welcome Back</h1>
-                <p class="text-on-surface-variant text-sm mb-10">Enter your phone number to access the ViKLAR Command Center.</p>
-                
-                <div class="mb-6">
-                    <label class="block text-xs font-bold text-on-surface mb-2 uppercase tracking-wider">Phone Number</label>
-                    <div class="flex gap-2">
-                        <input type="text" value="+234" disabled class="w-20 text-center px-4 py-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface">
-                        <input type="text" id="login-phone" placeholder="803 000 0000" class="flex-1 px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" onkeypress="if(event.key==='Enter') sendOTP()">
+            <div class="auth-content" id="login-step-1">
+                <h1 class="auth-title">Welcome Back</h1>
+                <p class="auth-subtitle">Enter your phone number to access the ViKLAR Command Center.</p>
+                <div class="input-group">
+                    <label class="input-label">PHONE NUMBER</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" value="+234" disabled style="width: 70px; text-align: center;" class="auth-input">
+                        <input type="text" id="login-phone" placeholder="803 000 0000" class="auth-input" onkeypress="if(event.key==='Enter') sendOTP()">
                     </div>
                 </div>
-                
-                <button class="bg-secondary-container text-white px-8 py-3 rounded-lg font-bold uppercase tracking-wider hover:brightness-95 transition-all w-max" onclick="sendOTP()">Send OTP Code</button>
-                <p class="mt-8 text-xs text-on-surface-variant">By continuing, you agree to ViKLAR's Terms of Service and Privacy Policy.</p>
+                <button class="btn-primary" onclick="sendOTP()">Send OTP Code</button>
             </div>
-
-            <div class="flex-1 p-16 flex flex-col justify-center hidden" id="login-step-2">
-                <h1 class="font-outfit text-3xl text-primary font-bold mb-2">Verify Identity</h1>
-                <p class="text-on-surface-variant text-sm mb-10">We've sent a 4-digit code to your WhatsApp. <br><span id="otp-phone-display" class="text-primary font-bold"></span></p>
-                
-                <div class="flex gap-3 mb-8" id="otp-inputs">
-                    <input type="text" maxlength="1" class="w-14 h-14 text-center text-2xl font-bold rounded-xl border-2 border-outline-variant focus:border-secondary-container focus:outline-none" onkeyup="moveNext(this, 'otp2')">
-                    <input type="text" maxlength="1" id="otp2" class="w-14 h-14 text-center text-2xl font-bold rounded-xl border-2 border-outline-variant focus:border-secondary-container focus:outline-none" onkeyup="moveNext(this, 'otp3')">
-                    <input type="text" maxlength="1" id="otp3" class="w-14 h-14 text-center text-2xl font-bold rounded-xl border-2 border-outline-variant focus:border-secondary-container focus:outline-none" onkeyup="moveNext(this, 'otp4')">
-                    <input type="text" maxlength="1" id="otp4" class="w-14 h-14 text-center text-2xl font-bold rounded-xl border-2 border-outline-variant focus:border-secondary-container focus:outline-none" onkeyup="verifyOTP()">
+            <div class="auth-content hidden" id="login-step-2" style="display: none;">
+                <h1 class="auth-title">Verify Identity</h1>
+                <p class="auth-subtitle">We've sent a 4-digit code to your WhatsApp. <br><span id="otp-phone-display" style="color: #2E3192; font-weight: 600;"></span></p>
+                <div class="otp-container" id="otp-inputs">
+                    <input type="text" maxlength="1" class="otp-input" onkeyup="moveNext(this, 'otp2')">
+                    <input type="text" maxlength="1" id="otp2" class="otp-input" onkeyup="moveNext(this, 'otp3')">
+                    <input type="text" maxlength="1" id="otp3" class="otp-input" onkeyup="moveNext(this, 'otp4')">
+                    <input type="text" maxlength="1" id="otp4" class="otp-input" onkeyup="verifyOTP()">
                 </div>
-                
-                <div class="flex justify-between items-center">
-                    <p id="resend-timer" class="text-sm text-on-surface-variant">Resend code in 30s</p>
-                    <button class="bg-secondary-container text-white px-8 py-3 rounded-lg font-bold uppercase tracking-wider hover:brightness-95 transition-all" onclick="verifyOTP()">Continue →</button>
-                </div>
+                <button class="btn-primary" onclick="verifyOTP()">Continue →</button>
             </div>
         </div>
     </div>
 
     <!-- 2. PROFILE SETUP FLOW -->
-    <div id="setup-flow" class="fixed inset-0 bg-primary z-[1000] flex items-center justify-center hidden">
-        <div class="flex bg-surface w-[800px] h-[700px] rounded-[1.5rem] overflow-hidden shadow-2xl">
-            <div class="flex-1 p-20 flex flex-col justify-center">
-                <div class="flex items-center gap-4 mb-12">
-                    <div class="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center font-bold">1</div>
-                    <div>
-                        <h2 class="font-outfit text-2xl text-primary font-bold">Complete Your Profile</h2>
-                        <p class="text-sm text-on-surface-variant">Step 1 of 3: Basic Information</p>
-                    </div>
+    <div id="setup-flow" class="auth-overlay" style="display: none;">
+        <div class="auth-container" style="height: 700px;">
+            <div class="auth-content" style="padding: 5rem;">
+                <h2 style="font-size: 1.5rem; margin-bottom: 2rem; color: #2E3192; font-weight: bold;">Complete Your Profile</h2>
+                <div class="input-group">
+                    <label class="input-label">FULL NAME *</label>
+                    <input type="text" id="setup-name" placeholder="e.g. John Doe" class="auth-input">
                 </div>
-
-                <div class="mb-6">
-                    <label class="block text-xs font-bold text-on-surface mb-2 uppercase tracking-wider">FULL NAME *</label>
-                    <input type="text" id="setup-name" placeholder="e.g. John Doe" class="w-full px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                <div class="input-group">
+                    <label class="input-label">EMAIL ADDRESS *</label>
+                    <input type="email" id="setup-email" placeholder="john.doe@viklar.com" class="auth-input">
                 </div>
-                
-                <div class="mb-6">
-                    <label class="block text-xs font-bold text-on-surface mb-2 uppercase tracking-wider">EMAIL ADDRESS *</label>
-                    <input type="email" id="setup-email" placeholder="john.doe@viklar.com" class="w-full px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                </div>
-
-                <div class="mb-8">
-                    <label class="block text-xs font-bold text-on-surface mb-2 uppercase tracking-wider">DEPARTMENT *</label>
-                    <select id="setup-dept" class="w-full px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-white">
+                <div class="input-group">
+                    <label class="input-label">DEPARTMENT *</label>
+                    <select id="setup-dept" class="auth-input">
                         <option value="Engineering">Engineering</option>
                         <option value="Operations">Operations</option>
                         <option value="Finance">Finance</option>
@@ -201,114 +201,100 @@ module.exports = (requisitions, process) => `
                         <option value="Management">Management</option>
                     </select>
                 </div>
-
-                <div class="flex justify-end gap-4 mt-8">
-                    <button class="px-8 py-3 rounded-lg font-bold uppercase tracking-wider text-on-surface-variant border border-outline-variant hover:bg-surface-container-low transition-all" onclick="skipSetup()">Skip</button>
-                    <button class="bg-secondary-container text-white px-8 py-3 rounded-lg font-bold uppercase tracking-wider hover:brightness-95 transition-all" onclick="completeSetup()">Next →</button>
-                </div>
+                <button class="btn-primary" onclick="completeSetup()">Next →</button>
             </div>
         </div>
     </div>
 
-    <!-- 3. MAIN DASHBOARD -->
-    <div id="app-layout" class="hidden h-screen w-full">
+    <!-- MAIN APP LAYOUT -->
+    <div id="app-layout" style="display: none;">
         <!-- NavigationDrawer -->
-        <aside id="sidebar" class="hidden lg:flex flex-col py-6 px-4 w-[260px] h-screen fixed left-0 top-0 bg-primary dark:bg-primary-container shadow-md z-50 transition-all">
-            <div class="mb-10 px-4 flex items-center gap-3">
-                <img src="/logo.png" style="height: 32px; filter: brightness(0) invert(1);">
-                <span class="font-outfit text-2xl font-bold text-white tracking-tight">ViKLAR</span>
+        <aside class="hidden lg:flex flex-col py-6 px-4 w-[260px] h-screen fixed left-0 top-0 bg-primary dark:bg-primary-container shadow-md z-50">
+            <div class="mb-10 px-4">
+                <span class="font-headline-md text-headline-md font-bold text-white tracking-tight">ViKLAR</span>
             </div>
-            <nav class="flex flex-col gap-2" id="nav-menu">
-                <a class="nav-item active flex items-center gap-3 px-4 py-3 text-white font-label-bold rounded-lg cursor-pointer" onclick="showView('home', this)">
-                    <span class="material-symbols-outlined">dashboard</span>
-                    <span class="font-body-md">Dashboard</span>
-                </a>
-                <a class="nav-item flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white transition-colors cursor-pointer" onclick="showView('requisitions', this)">
-                    <span class="material-symbols-outlined">list_alt</span>
-                    <span class="font-body-md">Requisitions</span>
-                </a>
-                <a class="nav-item flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white transition-colors cursor-pointer" onclick="showView('chat', this)">
-                    <span class="material-symbols-outlined">forum</span>
-                    <span class="font-body-md">Intercompany Chat</span>
-                </a>
-                <a class="nav-item flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white transition-colors cursor-pointer" onclick="showView('automation', this)">
-                    <span class="material-symbols-outlined">bolt</span>
-                    <span class="font-body-md">Automated Messages</span>
-                </a>
-                <a class="nav-item flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white transition-colors cursor-pointer" onclick="showView('jobforms', this)">
-                    <span class="material-symbols-outlined">cloud_upload</span>
-                    <span class="font-body-md">Job Completion</span>
-                </a>
-                <a class="nav-item role-ceo role-admin flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white transition-colors cursor-pointer" onclick="showView('users', this)">
-                    <span class="material-symbols-outlined">group</span>
-                    <span class="font-body-md">User Management</span>
-                </a>
-                <a class="nav-item flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white transition-colors cursor-pointer" onclick="showView('settings', this)">
-                    <span class="material-symbols-outlined">settings</span>
-                    <span class="font-body-md">Settings</span>
-                </a>
+            <nav class="flex flex-col gap-2">
+                <button onclick="showView('home', this)" class="nav-item flex items-center gap-3 px-4 py-3 bg-surface-container-highest/20 text-white font-label-bold rounded-lg transition-colors w-full text-left">
+                    <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                    <span class="font-body-md text-body-md">Dashboard</span>
+                </button>
+                <button onclick="showView('requisitions', this)" class="nav-item flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-surface-container-highest/10 transition-colors w-full text-left">
+                    <span class="material-symbols-outlined" data-icon="description">description</span>
+                    <span class="font-body-md text-body-md">Requisitions</span>
+                </button>
+                <button onclick="showView('chat', this)" class="nav-item flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-surface-container-highest/10 transition-colors w-full text-left">
+                    <span class="material-symbols-outlined" data-icon="chat">chat</span>
+                    <span class="font-body-md text-body-md">Chat</span>
+                </button>
+                <button onclick="showView('automation', this)" class="nav-item flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-surface-container-highest/10 transition-colors w-full text-left">
+                    <span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+                    <span class="font-body-md text-body-md">Automated Messages</span>
+                </button>
+                <button onclick="showView('jobforms', this)" class="nav-item flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-surface-container-highest/10 transition-colors w-full text-left">
+                    <span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+                    <span class="font-body-md text-body-md">Job Form</span>
+                </button>
+                <button onclick="showView('users', this)" class="nav-item role-ceo role-admin flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-surface-container-highest/10 transition-colors w-full text-left">
+                    <span class="material-symbols-outlined" data-icon="group">group</span>
+                    <span class="font-body-md text-body-md">Users</span>
+                </button>
+                <button onclick="showView('settings', this)" class="nav-item flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-surface-container-highest/10 transition-colors w-full text-left">
+                    <span class="material-symbols-outlined" data-icon="settings">settings</span>
+                    <span class="font-body-md text-body-md">Settings</span>
+                </button>
             </nav>
-            <div class="mt-auto px-4">
-                <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5 relative">
-                    <div id="user-avatar" class="w-10 h-10 rounded-full bg-secondary-container text-white flex items-center justify-center font-bold">JD</div>
+            <div class="mt-auto px-4 cursor-pointer" onclick="logout()">
+                <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition">
+                    <div id="user-avatar" class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold">JD</div>
                     <div class="overflow-hidden">
                         <p id="user-display-name" class="text-white font-label-bold text-label-bold truncate">John Doe</p>
-                        <p id="user-display-role" class="text-white/50 text-label-sm font-label-sm truncate uppercase">Employee</p>
+                        <p id="user-display-role" class="text-white/50 text-label-sm font-label-sm truncate">Role</p>
                     </div>
-                    <button onclick="logout()" class="absolute right-3 text-white/40 hover:text-white"><i class="fa-solid fa-right-from-bracket"></i></button>
                 </div>
             </div>
         </aside>
 
         <!-- Main Content Area -->
-        <main class="lg:ml-[260px] min-h-screen flex flex-col w-full" style="max-width: calc(100% - 260px);">
+        <main class="lg:ml-[260px] min-h-screen flex flex-col">
             <!-- TopAppBar -->
-            <header class="flex justify-between items-center h-16 px-6 sticky top-0 z-40 bg-surface dark:bg-surface-dim shadow-sm flex-shrink-0">
+            <header class="flex justify-between items-center h-16 px-6 sticky top-0 z-40 bg-surface dark:bg-surface-dim shadow-sm">
                 <div class="flex items-center gap-4">
-                    <button class="lg:hidden text-on-surface" onclick="toggleSidebar()">
-                        <span class="material-symbols-outlined">menu</span>
+                    <button class="lg:hidden text-on-surface">
+                        <span class="material-symbols-outlined" data-icon="menu">menu</span>
                     </button>
-                    <h1 id="view-title" class="font-outfit text-xl font-bold text-on-surface">Hello, John 👋</h1>
+                    <h1 id="view-title" class="font-headline-md text-headline-md text-on-surface">Dashboard</h1>
                 </div>
                 <div class="flex items-center gap-4">
-                    <div class="relative hidden sm:block">
-                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-                        <input class="pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-lg text-body-md focus:ring-2 focus:ring-primary w-64" placeholder="Search resources..." type="text"/>
-                    </div>
                     <button class="p-2 hover:bg-surface-container-low rounded-full transition-colors relative">
-                        <span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+                        <span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
                         <span class="absolute top-2 right-2 w-2 h-2 bg-secondary-container rounded-full"></span>
                     </button>
-                    <div class="h-8 w-[1px] bg-outline-variant mx-2"></div>
-                    <div class="text-right hidden md:block">
-                        <div class="text-sm font-bold">ViKLAR Bot</div>
-                        <div class="text-[10px] text-success font-bold uppercase">● LIVE</div>
-                    </div>
                 </div>
             </header>
 
-            <div class="flex-1 overflow-y-auto p-6 lg:p-gutter max-w-container-max mx-auto space-y-gutter w-full">
-                <!-- Home View -->
-                <div id="view-home" class="view active space-y-gutter">
+            <div class="p-6 lg:p-gutter max-w-container-max mx-auto w-full space-y-gutter flex-1">
+                
+                <!-- VIEW: HOME -->
+                <div id="view-home" class="view active">
                     <!-- Quick Action Bento Grid -->
-                    <section class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
-                        <button class="group flex flex-col items-start text-left p-6 bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow transition-all hover:-translate-y-1 hover:shadow-lg" onclick="showView('requisitions', document.querySelectorAll('.nav-item')[1])">
+                    <section class="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-6">
+                        <button onclick="showView('requisitions', document.querySelectorAll('.nav-item')[1])" class="group flex flex-col items-start text-left p-6 bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow transition-all hover:-translate-y-1 hover:shadow-lg">
                             <div class="w-12 h-12 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container mb-4">
-                                <span class="material-symbols-outlined">add_circle</span>
+                                <span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
                             </div>
                             <h3 class="font-headline-md text-headline-md text-on-surface mb-1">New Requisition</h3>
                             <p class="font-body-md text-body-md text-on-surface-variant">Initiate a new resource or budget request.</p>
                         </button>
-                        <button class="group flex flex-col items-start text-left p-6 bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow transition-all hover:-translate-y-1 hover:shadow-lg" onclick="showView('jobforms', document.querySelectorAll('.nav-item')[4])">
+                        <button onclick="showView('jobforms', document.querySelectorAll('.nav-item')[4])" class="group flex flex-col items-start text-left p-6 bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow transition-all hover:-translate-y-1 hover:shadow-lg">
                             <div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary mb-4">
-                                <span class="material-symbols-outlined">cloud_upload</span>
+                                <span class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
                             </div>
                             <h3 class="font-headline-md text-headline-md text-on-surface mb-1">Upload Job Form</h3>
-                            <p class="font-body-md text-body-md text-on-surface-variant">Submit completed job verification documents.</p>
+                            <p class="font-body-md text-body-md text-on-surface-variant">Submit completion forms for your jobs.</p>
                         </button>
-                        <button class="group flex flex-col items-start text-left p-6 bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow transition-all hover:-translate-y-1 hover:shadow-lg" onclick="showView('chat', document.querySelectorAll('.nav-item')[2])">
+                        <button onclick="showView('chat', document.querySelectorAll('.nav-item')[2])" class="group flex flex-col items-start text-left p-6 bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow transition-all hover:-translate-y-1 hover:shadow-lg">
                             <div class="w-12 h-12 rounded-lg bg-secondary-container/20 flex items-center justify-center text-secondary mb-4">
-                                <span class="material-symbols-outlined">forum</span>
+                                <span class="material-symbols-outlined" data-icon="forum">forum</span>
                             </div>
                             <h3 class="font-headline-md text-headline-md text-on-surface mb-1">Team Chat</h3>
                             <p class="font-body-md text-body-md text-on-surface-variant">Coordinate with the requisition review team.</p>
@@ -317,47 +303,36 @@ module.exports = (requisitions, process) => `
 
                     <!-- Main Workspace Grid -->
                     <div class="grid grid-cols-1 xl:grid-cols-12 gap-gutter items-start">
-                        <!-- Left: Recent Requisitions Table & Analytics -->
                         <div class="xl:col-span-8 space-y-gutter">
                             <!-- Statistics Overview Row -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-gutter" id="home-stats">
-                                <!-- Dynamic Stats Injected Here -->
+                            <div id="home-stats" class="grid grid-cols-1 sm:grid-cols-2 gap-gutter">
+                                <!-- JS injected -->
                             </div>
 
                             <!-- Requisitions Table -->
                             <div class="bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow overflow-hidden">
                                 <div class="p-6 flex justify-between items-center">
                                     <h2 class="font-headline-md text-headline-md">Your Recent Requisitions</h2>
-                                    <button class="text-primary font-label-bold text-label-bold hover:underline" onclick="showView('requisitions', document.querySelectorAll('.nav-item')[1])">View All</button>
+                                    <button onclick="showView('requisitions', document.querySelectorAll('.nav-item')[1])" class="text-primary font-label-bold text-label-bold hover:underline">View All</button>
                                 </div>
                                 <div class="overflow-x-auto">
-                                    <table class="w-full text-left" id="recent-reqs-table">
+                                    <table class="w-full text-left">
                                         <thead class="bg-surface-container-low border-y border-outline-variant/20">
                                             <tr>
                                                 <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">ID</th>
                                                 <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Date</th>
                                                 <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Amount</th>
                                                 <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Status</th>
-                                                <th class="px-6 py-4"></th>
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-outline-variant/20">
-                                            ${requisitions.slice(0, 5).map(r => \`
+                                            \${requisitions.slice(0, 5).map(r => \`
                                                 <tr class="hover:bg-surface-container-low transition-colors group">
-                                                    <td class="px-6 py-4 font-label-bold text-primary">#\${r.requestId}</td>
+                                                    <td class="px-6 py-4 font-label-bold text-on-surface">#\${r.requestId}</td>
                                                     <td class="px-6 py-4 text-body-md font-body-md text-on-surface-variant">\${r.timestamp.split(',')[0]}</td>
                                                     <td class="px-6 py-4 font-label-bold text-on-surface">\${r.amount}</td>
                                                     <td class="px-6 py-4">
-                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold \${
-                                                            (r.status||'').toLowerCase() === 'approved' ? 'bg-success/10 text-success' :
-                                                            (r.status||'').toLowerCase() === 'rejected' ? 'bg-error/10 text-error' :
-                                                            'bg-warning/10 text-warning'
-                                                        }">\${r.status || 'Pending'}</span>
-                                                    </td>
-                                                    <td class="px-6 py-4 text-right">
-                                                        <button class="p-1 hover:bg-surface-container-highest rounded transition-colors text-outline group-hover:text-primary">
-                                                            <span class="material-symbols-outlined">more_vert</span>
-                                                        </button>
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container-highest text-primary">\${r.status}</span>
                                                     </td>
                                                 </tr>
                                             \`).join('')}
@@ -367,286 +342,162 @@ module.exports = (requisitions, process) => `
                             </div>
                         </div>
 
-                        <!-- Right: Messages & Quick Create -->
+                        <!-- Right: Quick Create -->
                         <div class="xl:col-span-4 space-y-gutter">
-                            <!-- Quick Create Requisition Card -->
                             <div class="p-6 bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow">
                                 <h3 class="font-headline-md text-headline-md mb-4">Quick Create</h3>
                                 <form class="space-y-4">
                                     <div>
                                         <label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">Item Category</label>
-                                        <select class="w-full rounded-lg border border-outline-variant/50 text-body-md p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                                        <select class="w-full rounded-lg border-outline-variant/30 text-body-md font-body-md focus:border-primary focus:ring-primary p-2">
                                             <option>Office Supplies</option>
                                             <option>Hardware/IT</option>
                                             <option>Travel/Expenses</option>
-                                            <option>Software Licensing</option>
                                         </select>
                                     </div>
                                     <div class="grid grid-cols-2 gap-4">
                                         <div>
                                             <label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">Quantity</label>
-                                            <input class="w-full rounded-lg border border-outline-variant/50 text-body-md p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" type="number" value="1"/>
+                                            <input class="w-full rounded-lg border-outline-variant/30 text-body-md font-body-md focus:border-primary focus:ring-primary p-2" type="number" value="1"/>
                                         </div>
                                         <div>
                                             <label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">Estimated Cost</label>
-                                            <input class="w-full rounded-lg border border-outline-variant/50 text-body-md p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="$0.00" type="text"/>
+                                            <input class="w-full rounded-lg border-outline-variant/30 text-body-md font-body-md focus:border-primary focus:ring-primary p-2" placeholder="$0.00" type="text"/>
                                         </div>
                                     </div>
-                                    <button class="w-full bg-secondary-container text-white py-3 rounded-lg font-label-bold text-label-bold transition-all active:translate-y-0.5 hover:brightness-95" type="button" onclick="alert('Proceed to WhatsApp to finalize details.')">
+                                    <button class="w-full bg-secondary-container text-on-secondary py-3 rounded-lg font-label-bold text-label-bold transition-all active:translate-y-0.5 hover:brightness-95" type="button">
                                         Submit Requisition
                                     </button>
                                 </form>
                             </div>
-
-                            <!-- Recent Updates Feed -->
-                            <div class="bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow flex flex-col">
-                                <div class="p-6 border-b border-outline-variant/20 flex justify-between items-center">
-                                    <h3 class="font-headline-md text-headline-md">Recent Updates</h3>
-                                    <button class="p-1 hover:bg-surface-container-low rounded-full">
-                                        <span class="material-symbols-outlined text-outline">sync</span>
-                                    </button>
-                                </div>
-                                <div class="p-0">
-                                    <div class="p-4 border-b border-outline-variant/20">
-                                        <div class="text-xs text-on-surface-variant mb-1">2:30 PM</div>
-                                        <div class="text-sm font-semibold">Admin approved REQ-A1B2</div>
-                                    </div>
-                                    <div class="p-4 border-b border-outline-variant/20">
-                                        <div class="text-xs text-on-surface-variant mb-1">1:15 PM</div>
-                                        <div class="text-sm font-semibold">Team: Standup at 9am tomorrow</div>
-                                    </div>
-                                    <div class="p-4 text-center">
-                                        <a href="#" class="text-primary text-sm font-bold hover:underline">View All Notifications</a>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Requisitions View -->
+                <!-- VIEW: REQUISITIONS -->
                 <div id="view-requisitions" class="view">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex gap-4">
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-                                <input type="text" placeholder="Search ID, purpose..." class="pl-10 pr-4 py-2 border border-outline-variant/50 rounded-lg outline-none focus:border-primary">
-                            </div>
-                            <select class="px-4 py-2 border border-outline-variant/50 rounded-lg outline-none focus:border-primary">
-                                <option>Filter: ALL</option>
-                                <option>Pending</option>
-                                <option>Approved</option>
-                            </select>
-                        </div>
-                        <button class="bg-primary text-white px-4 py-2 rounded-lg font-bold hover:bg-primary/90 flex items-center gap-2">
-                            <span class="material-symbols-outlined text-sm">add</span> New Request
-                        </button>
-                    </div>
-                    
                     <div class="bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow overflow-hidden">
-                        <table class="w-full text-left">
-                            <thead class="bg-surface-container-low border-b border-outline-variant/20">
-                                <tr>
-                                    <th class="px-6 py-4 font-label-bold text-outline uppercase">ID</th>
-                                    <th class="px-6 py-4 font-label-bold text-outline uppercase">Requester</th>
-                                    <th class="px-6 py-4 font-label-bold text-outline uppercase">Purpose</th>
-                                    <th class="px-6 py-4 font-label-bold text-outline uppercase">Amount</th>
-                                    <th class="px-6 py-4 font-label-bold text-outline uppercase">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-outline-variant/20">
-                                ${requisitions.map(r => \`
-                                    <tr class="hover:bg-surface-container-low transition-colors">
-                                        <td class="px-6 py-4 font-bold text-primary">#\${r.requestId}</td>
-                                        <td class="px-6 py-4">+\${r.phone}</td>
-                                        <td class="px-6 py-4 max-w-[200px] truncate" title="\${r.purpose}">\${r.purpose}</td>
-                                        <td class="px-6 py-4 font-bold">\${r.amount}</td>
-                                        <td class="px-6 py-4">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold \${
-                                                (r.status||'').toLowerCase() === 'approved' ? 'bg-success/10 text-success' :
-                                                (r.status||'').toLowerCase() === 'rejected' ? 'bg-error/10 text-error' :
-                                                'bg-warning/10 text-warning'
-                                            }">\${r.status || 'Pending'}</span>
-                                        </td>
+                        <div class="p-6 flex justify-between items-center border-b border-outline-variant/20">
+                            <h2 class="font-headline-md text-headline-md">All Requisitions</h2>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-surface-container-low border-y border-outline-variant/20">
+                                    <tr>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">ID</th>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Requester</th>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Purpose</th>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Amount</th>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Status</th>
                                     </tr>
-                                \`).join('')}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody class="divide-y divide-outline-variant/20">
+                                    \${requisitions.map(r => \`
+                                        <tr class="hover:bg-surface-container-low transition-colors group">
+                                            <td class="px-6 py-4 font-label-bold text-on-surface">#\${r.requestId}</td>
+                                            <td class="px-6 py-4 text-body-md font-body-md text-on-surface-variant">+\${r.phone}</td>
+                                            <td class="px-6 py-4 text-body-md font-body-md text-on-surface-variant max-w-[200px] truncate">\${r.purpose}</td>
+                                            <td class="px-6 py-4 font-label-bold text-on-surface">\${r.amount}</td>
+                                            <td class="px-6 py-4">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container-highest text-primary">\${r.status}</span>
+                                            </td>
+                                        </tr>
+                                    \`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Chat View -->
+                <!-- VIEW: CHAT -->
                 <div id="view-chat" class="view">
-                    <div class="flex h-[calc(100vh-140px)] bg-surface rounded-xl border border-outline-variant/30 overflow-hidden custom-card-shadow">
-                        <div class="w-[300px] border-r border-outline-variant/20 flex flex-col bg-surface-container-lowest">
-                            <div class="p-4 border-b border-outline-variant/20">
-                                <input type="text" placeholder="Search chats..." class="w-full px-4 py-2 border border-outline-variant/50 rounded-lg outline-none focus:border-primary text-sm">
-                            </div>
-                            <div class="flex-1 overflow-y-auto">
-                                <div class="p-4 border-b border-outline-variant/20 bg-surface-container-low cursor-pointer border-l-4 border-l-secondary-container">
-                                    <div class="font-bold text-sm">Company Broadcast</div>
-                                    <div class="text-xs text-on-surface-variant truncate mt-1">Admin: Hi team, meeting at 3pm...</div>
-                                </div>
-                                <div class="p-4 border-b border-outline-variant/20 hover:bg-surface-container-low cursor-pointer">
-                                    <div class="font-bold text-sm">Engineering Dept</div>
-                                    <div class="text-xs text-on-surface-variant truncate mt-1">Sarah: Site A is ready...</div>
-                                </div>
-                            </div>
+                    <div class="bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow flex flex-col h-[600px]">
+                        <div class="p-6 border-b border-outline-variant/20">
+                            <h3 class="font-headline-md text-headline-md">Intercompany Chat</h3>
                         </div>
-                        <div class="flex-1 flex flex-col bg-[#F8FAFC]">
-                            <div class="p-4 bg-surface border-b border-outline-variant/20 flex justify-between items-center">
-                                <div>
-                                    <div class="font-bold">Company Broadcast</div>
-                                    <div class="text-[10px] text-success font-bold uppercase mt-1">Broadcast Mode</div>
-                                </div>
-                                <i class="fa-solid fa-ellipsis-vertical text-outline cursor-pointer"></i>
-                            </div>
-                            <div class="flex-1 p-6 overflow-y-auto flex flex-col gap-4">
-                                <div class="max-w-[70%] bg-surface border border-outline-variant/20 p-4 rounded-2xl rounded-tl-none self-start shadow-sm">
-                                    <div class="text-xs font-bold text-secondary-container mb-1">ADMIN</div>
-                                    <p class="text-sm">Hi team, just a reminder for the safety standup at 3:00 PM today. Please be on time.</p>
-                                    <div class="text-[10px] text-outline mt-2 text-right">10:30 AM</div>
-                                </div>
-                                <div class="max-w-[70%] bg-primary p-4 rounded-2xl rounded-tr-none self-end text-white shadow-sm">
-                                    <p class="text-sm">Thanks! I'll be there.</p>
-                                    <div class="text-[10px] text-white/70 mt-2 text-right">10:45 AM</div>
-                                </div>
-                            </div>
-                            <div class="p-4 bg-surface border-t border-outline-variant/20 flex gap-4 items-center">
-                                <button class="text-outline hover:text-primary"><i class="fa-solid fa-paperclip"></i></button>
-                                <input type="text" placeholder="Type a message..." class="flex-1 bg-surface-container-low px-4 py-3 rounded-full outline-none focus:ring-1 focus:ring-primary">
-                                <button class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary/90 transition-transform active:scale-90"><i class="fa-solid fa-paper-plane"></i></button>
-                            </div>
+                        <div class="flex-1 p-6 flex flex-col justify-center items-center text-outline">
+                            <span class="material-symbols-outlined text-6xl mb-4">forum</span>
+                            <p>Chat system coming soon.</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Automation View -->
+                <!-- VIEW: AUTOMATION -->
                 <div id="view-automation" class="view">
-                    <div class="bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow p-8 max-w-[800px] mx-auto">
-                        <h3 class="font-outfit text-2xl font-bold mb-6">Create Automated Reminder</h3>
-                        
-                        <div class="mb-6">
-                            <label class="block text-xs font-bold text-on-surface mb-2 uppercase tracking-wider">MESSAGE NAME</label>
-                            <input type="text" placeholder="e.g. Weekly Safety Reminder" class="w-full px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                        </div>
-                        
-                        <div class="mb-6">
-                            <label class="block text-xs font-bold text-on-surface mb-2 uppercase tracking-wider">TEMPLATE</label>
-                            <textarea class="w-full px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none h-32" placeholder="Hello {name}, please remember to..."></textarea>
-                            <div class="flex gap-2 mt-2">
-                                <span class="bg-surface-container-high text-primary px-2 py-1 rounded text-xs font-bold cursor-pointer hover:bg-primary hover:text-white transition-colors">{name}</span>
-                                <span class="bg-surface-container-high text-primary px-2 py-1 rounded text-xs font-bold cursor-pointer hover:bg-primary hover:text-white transition-colors">{dept}</span>
-                                <span class="bg-surface-container-high text-primary px-2 py-1 rounded text-xs font-bold cursor-pointer hover:bg-primary hover:text-white transition-colors">{date}</span>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow p-6 max-w-2xl mx-auto">
+                        <h3 class="font-headline-md text-headline-md mb-6">Create Automated Message</h3>
+                        <div class="space-y-4">
                             <div>
-                                <label class="block text-xs font-bold text-on-surface mb-2 uppercase tracking-wider">FREQUENCY</label>
-                                <select class="w-full px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                                    <option>Daily</option>
-                                    <option>Weekly</option>
-                                    <option>Monthly</option>
-                                </select>
+                                <label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">Message Name</label>
+                                <input class="w-full rounded-lg border-outline-variant/30 p-3" type="text" placeholder="e.g. Weekly Update"/>
                             </div>
-                            <div>
-                                <label class="block text-xs font-bold text-on-surface mb-2 uppercase tracking-wider">TIME</label>
-                                <input type="time" class="w-full px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none" value="08:00">
-                            </div>
+                            <button class="bg-primary text-white py-3 px-6 rounded-lg font-label-bold">Schedule Automation</button>
                         </div>
-
-                        <button class="w-full bg-secondary-container text-white py-3 rounded-lg font-bold uppercase tracking-wider hover:brightness-95 transition-all">Schedule Automation</button>
                     </div>
                 </div>
 
-                <!-- Job Forms View -->
+                <!-- VIEW: JOB FORMS -->
                 <div id="view-jobforms" class="view">
-                    <div class="max-w-[600px] mx-auto">
-                        <form id="upload-form" class="bg-surface border-2 border-dashed border-outline-variant rounded-xl p-12 text-center relative hover:bg-surface-container-lowest transition-colors">
-                            <i class="fa-solid fa-cloud-arrow-up text-5xl text-primary/30 mb-6"></i>
-                            <h3 class="font-outfit text-xl font-bold mb-2">Upload Completion Form</h3>
-                            <p class="text-sm text-on-surface-variant mb-8">Drag and drop your scan or image here, or click to browse.</p>
-                            
-                            <input type="file" id="job-file" class="hidden" onchange="handleFile(this)">
-                            <button type="button" class="bg-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-primary/90 transition-colors" onclick="document.getElementById('job-file').click()">Select File</button>
-                            
-                            <div id="file-name-display" class="mt-4 font-bold text-primary text-sm"></div>
-                            
-                            <div class="text-left mt-8">
-                                <label class="block text-xs font-bold text-on-surface mb-2 uppercase tracking-wider">JOB NAME</label>
-                                <input type="text" id="job-name-input" class="w-full px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="e.g. Site A Power Installation">
-                            </div>
-                            
-                            <button type="button" class="w-full bg-secondary-container text-white py-3 rounded-lg font-bold uppercase tracking-wider hover:brightness-95 transition-all mt-6" onclick="uploadJobFile()">Upload →</button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Users View -->
-                <div id="view-users" class="view">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-outfit text-2xl font-bold">User Management</h3>
-                        <button class="bg-primary text-white px-4 py-2 rounded-lg font-bold hover:bg-primary/90 flex items-center gap-2">
-                            <span class="material-symbols-outlined text-sm">add</span> Add User
-                        </button>
-                    </div>
-                    <div class="bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow overflow-hidden">
-                        <table id="users-table" class="w-full text-left">
-                            <thead class="bg-surface-container-low border-b border-outline-variant/20">
-                                <tr>
-                                    <th class="px-6 py-4 font-label-bold text-outline uppercase">Name</th>
-                                    <th class="px-6 py-4 font-label-bold text-outline uppercase">Phone</th>
-                                    <th class="px-6 py-4 font-label-bold text-outline uppercase">Department</th>
-                                    <th class="px-6 py-4 font-label-bold text-outline uppercase">Role</th>
-                                    <th class="px-6 py-4 font-label-bold text-outline uppercase">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="users-tbody" class="divide-y divide-outline-variant/20">
-                                <!-- Dynamic -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Settings View -->
-                <div id="view-settings" class="view">
-                    <div class="bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow p-8 max-w-[700px] mx-auto">
-                        <h3 class="font-outfit text-2xl font-bold mb-8">System Settings</h3>
+                    <div class="bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow p-8 text-center max-w-2xl mx-auto">
+                        <span class="material-symbols-outlined text-6xl text-primary mb-4 opacity-50">cloud_upload</span>
+                        <h3 class="font-headline-md text-headline-md mb-2">Upload Completion Form</h3>
+                        <p class="text-on-surface-variant mb-6">Select a scanned document or image of the completed job form.</p>
                         
-                        <div class="space-y-6">
-                            <div>
-                                <label class="block text-xs font-bold text-on-surface mb-2 uppercase tracking-wider">GOOGLE SHEETS ID</label>
-                                <input type="text" class="w-full px-4 py-3 rounded-lg border border-outline-variant bg-surface-container-low outline-none text-on-surface-variant font-mono text-sm" value="\${process.env.GOOGLE_SHEETS_ID}" readonly>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-xs font-bold text-on-surface mb-2 uppercase tracking-wider">WHATSAPP PHONE ID</label>
-                                <input type="text" class="w-full px-4 py-3 rounded-lg border border-outline-variant bg-surface-container-low outline-none text-on-surface-variant font-mono text-sm" value="\${process.env.PHONE_ID || 'Connected'}" readonly>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-xs font-bold text-on-surface mb-2 uppercase tracking-wider">PRIMARY ADMIN PHONE</label>
-                                <input type="text" class="w-full px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none" value="\${process.env.PRIMARY_ADMIN || ''}" placeholder="+234...">
-                            </div>
+                        <input type="file" id="job-file" class="hidden" onchange="handleFile(this)">
+                        <button type="button" class="bg-surface-container-highest text-primary py-3 px-6 rounded-lg font-label-bold mb-4" onclick="document.getElementById('job-file').click()">Select File</button>
+                        <div id="file-name-display" class="text-primary font-bold mb-6"></div>
+
+                        <div class="text-left mb-6">
+                            <label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">Job Name</label>
+                            <input type="text" id="job-name-input" class="w-full rounded-lg border-outline-variant/30 p-3" placeholder="e.g. Site A Repair">
                         </div>
 
-                        <hr class="my-8 border-t border-outline-variant/30">
-                        
-                        <button class="bg-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-primary/90 transition-all">Save Changes</button>
+                        <button type="button" class="w-full bg-primary text-white py-3 rounded-lg font-label-bold" onclick="uploadJobFile()">Upload Form</button>
+                    </div>
+                </div>
+
+                <!-- VIEW: USERS -->
+                <div id="view-users" class="view">
+                    <div class="bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow overflow-hidden">
+                        <div class="p-6 flex justify-between items-center border-b border-outline-variant/20">
+                            <h2 class="font-headline-md text-headline-md">User Management</h2>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-surface-container-low border-y border-outline-variant/20">
+                                    <tr>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Name</th>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Phone</th>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Department</th>
+                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase">Role</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-tbody" class="divide-y divide-outline-variant/20">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: SETTINGS -->
+                <div id="view-settings" class="view">
+                    <div class="bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow p-6 max-w-2xl mx-auto">
+                        <h3 class="font-headline-md text-headline-md mb-6">System Settings</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">Google Sheets ID</label>
+                                <input class="w-full rounded-lg border-outline-variant/30 p-3 bg-surface-container-low" type="text" value="\${env.GOOGLE_SHEETS_ID}" readonly/>
+                            </div>
+                            <div>
+                                <label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">WhatsApp Phone ID</label>
+                                <input class="w-full rounded-lg border-outline-variant/30 p-3 bg-surface-container-low" type="text" value="\${env.PHONE_ID || 'Connected'}" readonly/>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
             </div>
         </main>
-        
-        <!-- Floating Action Button -->
-        <button class="fixed bottom-8 right-8 w-14 h-14 bg-secondary-container text-white shadow-xl rounded-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 group z-50" onclick="showView('requisitions', document.querySelectorAll('.nav-item')[1])">
-            <span class="material-symbols-outlined text-[28px]">add</span>
-            <span class="absolute right-full mr-4 bg-inverse-surface text-inverse-on-surface px-3 py-1.5 rounded-lg text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                New Requisition
-            </span>
-        </button>
     </div>
 
     <script>
@@ -665,8 +516,8 @@ module.exports = (requisitions, process) => `
             if (!phone) return alert('Enter phone number');
             
             document.getElementById('otp-phone-display').innerText = '+234 ' + phone;
-            document.getElementById('login-step-1').classList.add('hidden');
-            document.getElementById('login-step-2').classList.remove('hidden');
+            document.getElementById('login-step-1').style.display = 'none';
+            document.getElementById('login-step-2').style.display = 'flex';
             
             setTimeout(() => document.querySelector('.otp-input').focus(), 100);
         }
@@ -679,7 +530,6 @@ module.exports = (requisitions, process) => `
 
         async function verifyOTP() {
             const phone = document.getElementById('login-phone').value;
-            
             try {
                 const res = await fetch('/api/auth', {
                     method: 'POST',
@@ -692,8 +542,8 @@ module.exports = (requisitions, process) => `
                     localStorage.setItem('viklar_user', JSON.stringify(currentUser));
                     initApp();
                 } else {
-                    document.getElementById('login-flow').classList.add('hidden');
-                    document.getElementById('setup-flow').classList.remove('hidden');
+                    document.getElementById('login-flow').style.display = 'none';
+                    document.getElementById('setup-flow').style.display = 'flex';
                 }
             } catch (e) {
                 alert('Connection error');
@@ -719,97 +569,58 @@ module.exports = (requisitions, process) => `
             initApp();
         }
 
-        function skipSetup() {
-            currentUser = {
-                name: 'Guest User',
-                email: '',
-                department: 'Operations',
-                role: 'Employee',
-                phone: '234' + document.getElementById('login-phone').value
-            };
-            localStorage.setItem('viklar_user', JSON.stringify(currentUser));
-            initApp();
-        }
-
         function initApp() {
-            document.getElementById('login-flow').classList.add('hidden');
-            document.getElementById('setup-flow').classList.add('hidden');
-            document.getElementById('app-layout').classList.remove('hidden');
+            document.getElementById('login-flow').style.display = 'none';
+            document.getElementById('setup-flow').style.display = 'none';
+            document.getElementById('app-layout').style.display = 'block';
             
             document.getElementById('user-display-name').innerText = currentUser.name;
             document.getElementById('user-display-role').innerText = currentUser.role;
             document.getElementById('user-avatar').innerText = currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase();
-            document.getElementById('view-title').innerText = \`Hello, \${currentUser.name.split(' ')[0]} 👋\`;
 
-            // Handle Role Visibility
+            // Role logic
             const roleClass = 'role-' + currentUser.role.toLowerCase();
-            document.querySelectorAll('.nav-item[class*="role-"]').forEach(el => {
-                if (!el.classList.contains(roleClass)) el.classList.add('hidden');
+            document.querySelectorAll('.nav-item.role-ceo, .nav-item.role-admin').forEach(el => {
+                if (currentUser.role !== 'CEO' && currentUser.role !== 'Admin') {
+                    el.style.display = 'none';
+                }
             });
 
-            // Load Stats based on role
             renderStats();
             if (currentUser.role !== 'Employee') fetchUsers();
         }
 
         function renderStats() {
             const stats = document.getElementById('home-stats');
-            
             let html = '';
             if (currentUser.role === 'CEO' || currentUser.role === 'Admin') {
                 html = \`
                     <div class="p-6 bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow">
                         <div class="flex justify-between items-start mb-4">
-                            <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Total Spend (Q3)</span>
-                            <span class="text-success text-xs font-bold flex items-center bg-success/10 px-2 py-1 rounded-full">
-                                <span class="material-symbols-outlined text-[14px] mr-1">arrow_upward</span> 12%
-                            </span>
+                            <span class="text-label-sm font-label-sm text-on-surface-variant">Bot Status</span>
                         </div>
-                        <p class="text-3xl font-bold text-primary">$142,500.00</p>
-                        <div class="mt-4 h-1.5 w-full bg-surface-container-low rounded-full overflow-hidden">
-                            <div class="h-full bg-primary w-[65%]"></div>
-                        </div>
+                        <p class="text-headline-xl font-headline-xl text-success">LIVE</p>
                     </div>
                     <div class="p-6 bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow">
                         <div class="flex justify-between items-start mb-4">
-                            <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Active Requests</span>
-                            <span class="text-warning text-xs font-bold bg-warning/10 px-2 py-1 rounded-full">4 Pending</span>
+                            <span class="text-label-sm font-label-sm text-on-surface-variant">Total Reqs</span>
                         </div>
-                        <p class="text-3xl font-bold text-primary">28</p>
-                        <div class="flex gap-1 mt-4">
-                            <div class="h-2 flex-1 rounded-full bg-success"></div>
-                            <div class="h-2 flex-1 rounded-full bg-success"></div>
-                            <div class="h-2 flex-1 rounded-full bg-warning"></div>
-                            <div class="h-2 flex-1 rounded-full bg-surface-container-highest"></div>
-                            <div class="h-2 flex-1 rounded-full bg-surface-container-highest"></div>
-                        </div>
+                        <p class="text-headline-xl font-headline-xl">342</p>
                     </div>
                 \`;
             } else {
                 html = \`
                     <div class="p-6 bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow">
                         <div class="flex justify-between items-start mb-4">
-                            <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">My Requisitions</span>
-                            <span class="text-warning text-xs font-bold bg-warning/10 px-2 py-1 rounded-full">3 Pending</span>
+                            <span class="text-label-sm font-label-sm text-on-surface-variant">My Requisitions</span>
                         </div>
-                        <p class="text-3xl font-bold text-primary">12</p>
-                        <div class="mt-4 h-1.5 w-full bg-surface-container-low rounded-full overflow-hidden">
-                            <div class="h-full bg-primary w-[45%]"></div>
-                        </div>
+                        <p class="text-headline-xl font-headline-xl">12</p>
                     </div>
                     <div class="p-6 bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow">
                         <div class="flex justify-between items-start mb-4">
-                            <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Forms Uploaded</span>
-                            <span class="text-success text-xs font-bold bg-success/10 px-2 py-1 rounded-full">All Verified</span>
+                            <span class="text-label-sm font-label-sm text-on-surface-variant">Forms Uploaded</span>
                         </div>
-                        <p class="text-3xl font-bold text-primary">5</p>
-                        <div class="flex gap-1 mt-4">
-                            <div class="h-2 flex-1 rounded-full bg-success"></div>
-                            <div class="h-2 flex-1 rounded-full bg-success"></div>
-                            <div class="h-2 flex-1 rounded-full bg-success"></div>
-                            <div class="h-2 flex-1 rounded-full bg-success"></div>
-                            <div class="h-2 flex-1 rounded-full bg-success"></div>
-                        </div>
+                        <p class="text-headline-xl font-headline-xl">5</p>
                     </div>
                 \`;
             }
@@ -822,19 +633,17 @@ module.exports = (requisitions, process) => `
                 const users = await res.json();
                 const tbody = document.getElementById('users-tbody');
                 tbody.innerHTML = users.map(u => \`
-                    <tr class="hover:bg-surface-container-low transition-colors">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-secondary-container text-white flex items-center justify-center font-bold text-xs">\${u.name[0]}</div>
-                                <span class="font-bold">\${u.name}</span>
+                    <tr class="hover:bg-surface-container-low transition-colors group">
+                        <td class="px-6 py-4 font-label-bold text-on-surface">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">\${u.name[0]}</div>
+                                <span>\${u.name}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4">\${u.phone}</td>
-                        <td class="px-6 py-4">\${u.department}</td>
-                        <td class="px-6 py-4"><span class="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-bold">\${u.role}</span></td>
+                        <td class="px-6 py-4 text-body-md font-body-md text-on-surface-variant">\${u.phone}</td>
+                        <td class="px-6 py-4 text-body-md font-body-md text-on-surface-variant">\${u.department}</td>
                         <td class="px-6 py-4">
-                            <i class="fa-solid fa-pen-to-square text-outline hover:text-primary cursor-pointer mr-4"></i>
-                            <i class="fa-solid fa-trash text-error/70 hover:text-error cursor-pointer"></i>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container-highest text-primary">\${u.role}</span>
                         </td>
                     </tr>
                 \`).join('');
@@ -875,19 +684,18 @@ module.exports = (requisitions, process) => `
         function showView(id, btn) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => {
-                n.classList.remove('active');
-                n.classList.remove('bg-surface-container-highest/20');
+                n.classList.remove('bg-surface-container-highest/20', 'text-white', 'font-label-bold');
+                n.classList.add('text-white/70');
             });
             
             document.getElementById('view-' + id).classList.add('active');
-            btn.classList.add('active', 'bg-surface-container-highest/20');
-            document.getElementById('view-title').innerText = btn.querySelector('span:nth-child(2)').innerText;
-        }
-
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('hidden');
-            sidebar.classList.toggle('flex');
+            btn.classList.add('bg-surface-container-highest/20', 'text-white', 'font-label-bold');
+            btn.classList.remove('text-white/70');
+            
+            const titleSpan = btn.querySelector('span:nth-child(2)');
+            if(titleSpan) {
+                document.getElementById('view-title').innerText = titleSpan.innerText;
+            }
         }
 
         function logout() {
@@ -896,5 +704,5 @@ module.exports = (requisitions, process) => `
         }
     </script>
 </body>
-</html>
-`;
+</html>`;
+};
