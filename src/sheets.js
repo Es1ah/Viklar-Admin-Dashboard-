@@ -45,9 +45,10 @@ function getSheetsClient() {
  * @param {string} data.requestId
  * @returns {Promise<void>}
  */
-async function appendRequisition({ phone, persona, purpose, amount, requestId }) {
+async function appendRequisition({ requestId, timestamp, amount, status }) {
   const sheets = getSheetsClient();
-  const timestamp = new Date().toLocaleString('en-GB', { timeZone: 'Africa/Lagos' });
+
+  // Using parameter timestamp directly
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: process.env.GOOGLE_SHEETS_ID,
@@ -55,7 +56,7 @@ async function appendRequisition({ phone, persona, purpose, amount, requestId })
     valueInputOption: 'USER_ENTERED',
     insertDataOption: 'INSERT_ROWS',
     requestBody: {
-      values: [[timestamp, phone, persona, purpose, amount, 'Pending', requestId]],
+      values: [[timestamp, requestId, timestamp, amount, status, amount, 'Pending', requestId]],
     },
   });
 
@@ -243,7 +244,8 @@ async function logAudit(user, action, details) {
     try {
         const sheets = getSheetsClient();
         const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
-        const timestamp = new Date().toLocaleString('en-GB', { timeZone: 'Africa/Lagos' });
+      
+  // Using parameter timestamp directly
 
         await sheets.spreadsheets.values.append({
             spreadsheetId,
