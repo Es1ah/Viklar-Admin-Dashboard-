@@ -946,17 +946,17 @@ ${requisitions.map((r, i) => {
                     el.className = "px-4 py-3 hover:bg-surface-container-low cursor-pointer transition-colors border-l-4 border-transparent";
                     el.onclick = () => openChat(u);
                     el.id = 'chat-contact-' + u.phone;
-                    el.innerHTML = `
+                    el.innerHTML = \`
                         <div class="flex gap-3">
                             <div class="shrink-0 bg-secondary-container text-white w-12 h-12 rounded-full flex items-center justify-center font-bold">
-                                ${u.name[0].toUpperCase()}
+                                \${u.name[0].toUpperCase()}
                             </div>
                             <div class="flex-1 min-w-0 flex flex-col justify-center">
-                                <h4 class="font-label-bold text-on-surface truncate">${u.name}</h4>
-                                <p class="text-[11px] text-on-surface-variant">${u.department}</p>
+                                <h4 class="font-label-bold text-on-surface truncate">\${u.name}</h4>
+                                <p class="text-[11px] text-on-surface-variant">\${u.department}</p>
                             </div>
                         </div>
-                    `;
+                    \`;
                     list.appendChild(el);
                 });
             } catch (e) {
@@ -975,14 +975,14 @@ ${requisitions.map((r, i) => {
             // Update header
             const header = document.querySelector('#view-chat section.bg-white .h-16');
             if (header) {
-                header.innerHTML = `
+                header.innerHTML = \`
                     <div class="flex items-center gap-3">
                         <div class="relative w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-white font-bold">
-                            ${user.name[0].toUpperCase()}
+                            \${user.name[0].toUpperCase()}
                             <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success border-2 border-white rounded-full"></div>
                         </div>
                         <div>
-                            <h3 class="font-label-bold text-on-surface leading-none">${user.name}</h3>
+                            <h3 class="font-label-bold text-on-surface leading-none">\${user.name}</h3>
                             <span class="text-label-sm text-success">Active Now</span>
                         </div>
                     </div>
@@ -991,7 +991,7 @@ ${requisitions.map((r, i) => {
                         <button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">videocam</span></button>
                         <button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">info</span></button>
                     </div>
-                `;
+                \`;
             }
             
             pollChatMessages();
