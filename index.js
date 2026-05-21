@@ -19,6 +19,7 @@ const { listRequisitions, listUsers, logAudit, appendRequisition } = require('./
 const { initAutomation } = require('./src/automation');
 const { authenticate } = require('./src/auth');
 const { uploadToDrive } = require('./src/drive');
+const chatDB = require('./src/chat');
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
 
@@ -127,6 +128,54 @@ app.get('/api/automated-messages', async (req, res) => {
     try {
         const messages = await listAutomatedMessages();
         res.json(messages);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── API: Chat ──────────────────────────────────────────────────────────────
+app.get('/api/chat/recent/:userId', (req, res) => {
+    try {
+        const chats = chatDB.getRecentChats(req.params.userId);
+        res.json(chats);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/chat/:user1/:user2', (req, res) => {
+    try {
+        const { user1, user2 } = req.params;
+        const messages = chatDB.getMessages(user1, user2);
+        chatDB.markAsRead(user2, user1);
+        res.json(messages);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/chat', (req, res) => {
+    try {
+        const { sender, recipient, content } = req.body;
+        if (!sender || !recipient || !content) return res.status(400).json({ error: 'Missing required fields' });
+        
+        const msg = chatDB.sendMessage(sender, recipient, content);
+        res.json({ success: true, message: msg });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/chat/upload', upload.single('file'), async (req, res) => {
+    try {
+        const { sender, recipient, type } = req.body; // 'image', 'video', 'audio', 'file'
+        if (!req.file || !sender || !recipient) return res.status(400).json({ error: 'Missing required fields' });
+        
+        const fileLink = await uploadToDrive(req.file.path, `Chat_${type}_${Date.now()}`, req.file.mimetype);
+        fs.unlinkSync(req.file.path);
+        
+        const msg = chatDB.sendMessage(sender, recipient, '', fileLink, type || 'file');
+        res.json({ success: true, message: msg });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

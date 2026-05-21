@@ -379,38 +379,136 @@ module.exports = function renderDashboard({ requisitions, env }) {
                 </div>
 
                 <!-- VIEW: REQUISITIONS -->
+                <!-- VIEW: REQUISITIONS -->
                 <div id="view-requisitions" class="view">
-                    <div class="bg-surface border border-outline-variant/30 rounded-xl custom-card-shadow overflow-hidden">
-                        <div class="p-6 flex justify-between items-center border-b border-outline-variant/20">
-                            <h2 class="font-headline-md text-headline-md">All Requisitions</h2>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left">
-                                <thead class="bg-surface-container-low border-y border-outline-variant/20">
-                                    <tr>
-                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase whitespace-nowrap">ID</th>
-                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase whitespace-nowrap">Requester</th>
-                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase whitespace-nowrap">Purpose</th>
-                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase whitespace-nowrap">Amount</th>
-                                        <th class="px-6 py-4 font-label-bold text-label-bold text-outline uppercase whitespace-nowrap">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-outline-variant/20">
-                                    ${requisitions.map(r => `
-                                        <tr class="hover:bg-surface-container-low transition-colors group">
-                                            <td class="px-6 py-4 font-label-bold text-on-surface">#${r.requestId}</td>
-                                            <td class="px-6 py-4 text-body-md font-body-md text-on-surface-variant">+${r.phone}</td>
-                                            <td class="px-6 py-4 text-body-md font-body-md text-on-surface-variant max-w-[200px] truncate">${r.purpose}</td>
-                                            <td class="px-6 py-4 font-label-bold text-on-surface">${r.amount}</td>
-                                            <td class="px-6 py-4">
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-label-sm font-label-sm ${getBadgeClass(r.status)}">${r.status}</span>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+<div class="space-y-stack-md">
+<!-- Dashboard Header Section -->
+<section class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-on-surface">Requisitions</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Manage and track your operational requests and expenditures.</p>
+</div>
+<div class="flex items-center gap-3">
+<button onclick="exportRequisitionsCSV()" class="flex items-center gap-2 px-4 py-2 border border-outline-variant bg-surface hover:bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm rounded-lg transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]" data-icon="download">download</span>
+                        Export CSV
+                    </button>
+<button onclick="showView('view-dashboard', this); document.getElementById('quick-amount').focus();" class="flex items-center gap-2 px-6 py-2 bg-secondary-container text-on-secondary-container font-label-bold text-label-bold rounded-lg shadow-sm hover:brightness-95 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+                        New Request
+                    </button>
+</div>
+</section>
+<!-- Filters Bar -->
+<section class="bg-surface rounded-lg p-4 shadow-sm border border-outline-variant/30 flex flex-wrap items-center gap-4">
+<div class="relative flex-1 min-w-[240px]">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" data-icon="search">search</span>
+<input id="req-search-input" oninput="filterRequisitions()" class="w-full pl-10 pr-4 py-2 bg-background border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-body-md font-body-md" placeholder="Search by ID, requester, or keyword..." type="text"/>
+</div>
+<div class="flex items-center gap-2">
+<select id="req-status-filter" onchange="filterRequisitions()" class="bg-surface border border-outline-variant rounded-lg px-3 py-2 text-label-sm font-label-sm focus:ring-primary/20 focus:border-primary">
+<option value="All">Status: All</option>
+<option value="Pending">Pending</option>
+<option value="Approved">Approved</option>
+<option value="Rejected">Rejected</option>
+<option value="Completed">Completed</option>
+</select>
+<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant bg-surface hover:bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm rounded-lg transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="calendar_today">calendar_today</span>
+                        Date Range
+                    </button>
+</div>
+</section>
+<!-- Data Table -->
+<section class="bg-surface rounded-lg shadow-sm border border-outline-variant/30 overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse" id="requisitions-table-full">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant/50">
+<th class="px-6 py-4 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">ID</th>
+<th class="px-6 py-4 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Requester</th>
+<th class="px-6 py-4 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Department</th>
+<th class="px-6 py-4 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Amount</th>
+<th class="px-6 py-4 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Date</th>
+<th class="px-6 py-4 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Status</th>
+<th class="px-6 py-4 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+${requisitions.map((r, i) => {
+    // Generate an avatar color class
+    const colors = ['bg-primary-fixed', 'bg-secondary-fixed', 'bg-tertiary-fixed', 'bg-surface-variant', 'bg-primary-fixed-dim'];
+    const color = colors[i % colors.length];
+    
+    return `
+<tr class="hover:bg-surface-container-lowest transition-colors group req-row" data-search="${(r.requestId + ' ' + r.phone + ' ' + r.persona + ' ' + r.purpose).toLowerCase()}" data-status="${r.status}">
+<td class="px-6 py-4 font-label-bold text-label-bold text-primary">#REQ-${r.requestId}</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden ${color} flex items-center justify-center text-on-surface font-label-bold">
+    ${r.persona ? r.persona.charAt(0).toUpperCase() : '?'}
+</div>
+<div>
+<p class="font-label-bold text-label-bold text-on-surface">${r.persona || 'Web User'}</p>
+<p class="text-[11px] text-on-surface-variant">${r.phone}</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 font-body-md text-body-md max-w-[150px] truncate" title="${r.purpose}">${r.purpose || 'General'}</td>
+<td class="px-6 py-4 font-label-bold text-label-bold">${r.amount}</td>
+<td class="px-6 py-4 font-body-md text-body-md whitespace-nowrap">${new Date(r.timestamp).toLocaleDateString() === 'Invalid Date' ? r.timestamp : new Date(r.timestamp).toLocaleDateString()}</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-label-sm font-label-sm ${getBadgeClass(r.status)}">
+                                        ${r.status}
+                                    </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:bg-surface-container-high rounded transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>`}).join('')}
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="flex items-center justify-between px-6 py-4 border-t border-outline-variant/30 bg-surface">
+<p class="font-body-md text-body-md text-on-surface-variant">Showing <span id="req-visible-count">${requisitions.length}</span> results</p>
+<div class="flex items-center gap-2">
+<button class="p-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-all disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[20px]" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="px-3 py-1 bg-primary text-on-primary rounded-lg font-label-bold text-label-bold">1</button>
+<button class="p-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-all disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[20px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Bottom Stats Grid (Bento Style) -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-gutter">
+<div class="bg-surface p-6 rounded-lg shadow-sm border border-outline-variant/30 flex flex-col gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="pending_actions">pending_actions</span>
+<h3 class="font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Total Pending</h3>
+<p class="font-headline-xl text-headline-xl text-on-surface">${requisitions.filter(r => r.status.toLowerCase().includes('pending')).length}</p>
+</div>
+<div class="bg-surface p-6 rounded-lg shadow-sm border border-outline-variant/30 flex flex-col gap-2">
+<span class="material-symbols-outlined text-success" data-icon="check_circle">check_circle</span>
+<h3 class="font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Total Approved</h3>
+<p class="font-headline-xl text-headline-xl text-on-surface">${requisitions.filter(r => r.status.toLowerCase().includes('approved') || r.status.toLowerCase().includes('completed')).length}</p>
+</div>
+<div class="bg-surface p-6 rounded-lg shadow-sm border border-outline-variant/30 flex flex-col gap-2">
+<span class="material-symbols-outlined text-warning" data-icon="payments">payments</span>
+<h3 class="font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Total Requisitions</h3>
+<p class="font-headline-xl text-headline-xl text-on-surface">${requisitions.length}</p>
+</div>
+<div class="bg-surface p-6 rounded-lg shadow-sm border border-outline-variant/30 flex flex-col gap-2">
+<span class="material-symbols-outlined text-info" data-icon="avg_pace">avg_pace</span>
+<h3 class="font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Fastest Approval</h3>
+<p class="font-headline-xl text-headline-xl text-on-surface">< 24 Hours</p>
+</div>
+</section>
+</div>
                 </div>
 
                 <!-- VIEW: CHAT -->
@@ -430,54 +528,9 @@ module.exports = function renderDashboard({ requisitions, env }) {
 <span class="px-3 py-1 bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-label-bold rounded-full cursor-pointer transition-colors">Groups</span>
 </div>
 </div>
-<div class="flex-1 overflow-y-auto">
-<!-- Chat Item Active -->
-<div class="px-4 py-3 bg-surface-container border-l-4 border-primary cursor-pointer">
-<div class="flex gap-3">
-<div class="relative shrink-0">
-<img class="w-12 h-12 rounded-full object-cover" data-alt="A portrait of a professional female engineer with a neutral, focused expression. She is in a technologically advanced workspace with subtle blue ambient lighting and glass partitions. The lighting is crisp and modern, reflecting a sophisticated corporate minimalism." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGi4Uclk2sK9MODQDum7JfiTgQuq2rKpqtGt-GwVjenEZgMlpblpy7aX01vsxoWU3vfOFBwuPlJHbKEedy3P9Qc2Wy9YNPdrYkzmQV61AekbvlSqMYbJ1aoMjQzFjMP-R1XYBkB3mh8cz1jybp6phKIS2WrW96CbXVkG4Ip91HDFsTOnZ_cCTHTynqA_1Lisdb3P0IUmL1e9T-H1PTEO08MG5w4tlCf7dKIzSnA0D6DVhqkVElZcbj1fB69YnH0ZolJMq3nOEs-w0"/>
-<div class="absolute bottom-0 right-0 w-3 h-3 bg-success border-2 border-surface rounded-full"></div>
-</div>
-<div class="flex-1 min-w-0">
-<div class="flex justify-between items-baseline">
-<h4 class="font-label-bold text-on-surface truncate">Sarah Jenkins</h4>
-<span class="text-label-sm text-outline shrink-0">10:42 AM</span>
-</div>
-<p class="text-body-md text-on-surface truncate">The system logs show a spike in memory usage on Node 4.</p>
-</div>
-</div>
-</div>
-<!-- Chat Item Inactive -->
-<div class="px-4 py-3 hover:bg-surface-container-low cursor-pointer transition-colors">
-<div class="flex gap-3">
-<div class="relative shrink-0">
-<img class="w-12 h-12 rounded-full object-cover" data-alt="A high-resolution headshot of a senior tech operator with a serious, professional demeanor. He is set against a dark, minimalist background with soft blue secondary lighting. The composition is clean and premium, emphasizing a sense of calm authority and collaborative technological expertise." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA19_JW5sJv-VJnlVUfOnaMPiUjVmCEycQu4dWGv5APQs-oGz-vGBoVNVxFNqL523DLR941cQ76PI7ZmoIrSfBGTgONt4WfrDZBlyPj9OI1sxtv_W-wt5mYCK9WW4_vCplIMzBBg6DPHPvfL1g1AB9awn9UjSIfnnbAkJCc9tVmrho-nsth9xOapDfqos8RIrmvqIrlfRcV8Pk52IEfk5WFuEJkLaR7hCXUJdmNJCWjtpESpPBH12dcp9_gE_vYO9_VyG9KvMk04Io"/>
-<div class="absolute bottom-0 right-0 w-3 h-3 bg-outline border-2 border-surface rounded-full"></div>
-</div>
-<div class="flex-1 min-w-0">
-<div class="flex justify-between items-baseline">
-<h4 class="font-label-bold text-on-surface truncate">Marcus Chen</h4>
-<span class="text-label-sm text-outline shrink-0">Yesterday</span>
-</div>
-<p class="text-body-md text-on-surface-variant truncate">Attached the updated requisition forms for Q3.</p>
-</div>
-</div>
-</div>
-<!-- Chat Item Inactive -->
-<div class="px-4 py-3 hover:bg-surface-container-low cursor-pointer transition-colors">
-<div class="flex gap-3">
-<div class="shrink-0 bg-secondary-container text-white w-12 h-12 rounded-full flex items-center justify-center font-bold">
-                                    DS
-                                </div>
-<div class="flex-1 min-w-0">
-<div class="flex justify-between items-baseline">
-<h4 class="font-label-bold text-on-surface truncate">Data Solutions Team</h4>
-<span class="text-label-sm text-outline shrink-0">Mon</span>
-</div>
-<p class="text-body-md text-on-surface-variant truncate">Alex: Let's sync on the dashboard layout today.</p>
-</div>
-</div>
-</div>
+<div id="chat-user-list" class="flex-1 overflow-y-auto">
+    <!-- Chat Users will be injected here via JavaScript -->
+    <div class="p-6 text-center text-outline text-body-md">Loading contacts...</div>
 </div>
 </section>
 <!-- Column 2: Active Chat Window -->
@@ -501,40 +554,9 @@ module.exports = function renderDashboard({ requisitions, env }) {
 </div>
 </div>
 <!-- Chat Bubbles -->
-<div class="flex-1 overflow-y-auto p-6 space-y-6">
-<!-- Received Message -->
-<div class="flex items-end gap-3 max-w-[80%]">
-<img alt="Sarah" class="w-8 h-8 rounded-full mb-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCi7izrSB_FcnWWMpIDRglZJZwI4UbjJ1hkTEdhkVNJy_fQV6dyRmyIPJMD06wyZAVzjAtq78b9NanQu-kJ715nm2cehHj8ywWT9leGzNTbJUgqg9_ndq5-H0xPNUT2XXaDIYCMaRaixUorGGhus_VWXEMzXBEo9PyZnczhm8xc2caaREqEV0g3D0uPDszR8fo-Betj-GPdF8rroj6lS1D_IN-a_z1pL9fhtudSIet6NHeL3B7Imy6biHAf-yiw1LB_Va7rQmp3T1w"/>
-<div class="space-y-1">
-<div class="bg-surface-container px-4 py-3 rounded-2xl rounded-bl-none text-body-md text-on-surface shadow-sm">
-                                    Hello John, I've noticed a significant spike in memory usage on Node 4 of the ViKLAR primary cluster.
-                                </div>
-<span class="text-[10px] text-outline ml-2">10:40 AM</span>
-</div>
-</div>
-<!-- Sent Message -->
-<div class="flex flex-col items-end gap-1 ml-auto max-w-[80%]">
-<div class="bg-primary text-white px-4 py-3 rounded-2xl rounded-br-none text-body-md shadow-sm">
-                                Checking the logs now. Is it affecting the user-facing latency?
-                            </div>
-<div class="flex items-center gap-1 mr-2">
-<span class="text-[10px] text-outline">10:41 AM</span>
-<span class="material-symbols-outlined text-[12px] text-primary" style="font-variation-settings: 'FILL' 1;">done_all</span>
-</div>
-</div>
-<!-- Received Message with Image/Attachment -->
-<div class="flex items-end gap-3 max-w-[80%]">
-<img alt="Sarah" class="w-8 h-8 rounded-full mb-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7MBKjbvLRknyYA0O7C9z_jB22v8aW9MSsslfHjeoSTLvpfwPH95j_jL5pBGHlseMZSZLr2L65rMqTKvS43GOQC4auzprAUNeK4KCF8G4v9ul8omUylJlh4CB37zQPaOaWAlYOfCL5fcogmPhfFRALcMzBeIFZlsWi7cPAnhNuW2IsdSOb4Z-_XuT782ZuyD5U00Rb0Woui30wYO4PSWXYVInpjS4PflPJnBN57EXNE2anH073MwMcKzhFnG5r1v4BmhTKaGEoxvE"/>
-<div class="space-y-2">
-<div class="bg-surface-container px-4 py-3 rounded-2xl rounded-bl-none text-body-md text-on-surface shadow-sm">
-                                    Yes, slightly. Here is the screenshot from the command center dashboard for your reference.
-                                </div>
-<div class="rounded-xl overflow-hidden border border-outline-variant shadow-sm max-w-sm">
-<img class="w-full h-auto" data-alt="A sophisticated data visualization dashboard showing real-time memory usage charts with glowing blue and orange lines. The interface is clean and dark-themed, characteristic of a high-tech command center. Subtle digital grids and holographic elements suggest a futuristic, mission-critical monitoring environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYUKyPf-fgIEtfHILRUcSEplCfred35MkKHRwqFIgzvFNMAxGejj1OQ_WqWoUMrsNl4JumCZv82utE8RrdzMmDSchLIpiBeSigkTEbpTFzW6fHt1GFwGdTKb8iu_P-10RXfo_h3A_-eaLh1C4w1v9fGW37abgHb0apauPtEnPVUIIqH-BzZ20OayyKYEpxCurt_H3MJilN05VqZWj2O8idjQnAHoIdY-crkjGS9EXk-8oV8SRXI9gQUoPvZAL5RgZEBhmTfVL7d5E"/>
-</div>
-<span class="text-[10px] text-outline ml-2">10:42 AM</span>
-</div>
-</div>
+<div id="chat-messages-container" class="flex-1 overflow-y-auto p-6 space-y-6">
+    <!-- Messages injected via JS -->
+    <div class="flex h-full items-center justify-center text-outline font-body-md">Select a contact to start chatting</div>
 </div>
 <!-- Message Input -->
 <div class="p-6 bg-surface border-t border-outline-variant">
@@ -543,12 +565,12 @@ module.exports = function renderDashboard({ requisitions, env }) {
 <button class="p-2 text-outline hover:text-primary transition-colors">
 <span class="material-symbols-outlined">add_circle</span>
 </button>
-<textarea class="flex-1 bg-transparent border-none focus:ring-0 text-body-md resize-none py-2 max-h-32 min-h-[40px]" placeholder="Write a message..."></textarea>
+<textarea id="chat-input" onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendChatMessage(); }" class="flex-1 bg-transparent border-none focus:ring-0 text-body-md resize-none py-2 max-h-32 min-h-[40px]" placeholder="Write a message..."></textarea>
 <div class="flex gap-1 pb-1">
 <button class="p-2 text-outline hover:text-primary transition-colors">
 <span class="material-symbols-outlined">sentiment_satisfied</span>
 </button>
-<button class="bg-primary hover:bg-primary-container text-white w-10 h-10 flex items-center justify-center rounded-lg transition-all active:scale-95 shadow-sm">
+<button onclick="sendChatMessage()" class="bg-primary hover:bg-primary-container text-white w-10 h-10 flex items-center justify-center rounded-lg transition-all active:scale-95 shadow-sm">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
 </button>
 </div>
@@ -556,13 +578,14 @@ module.exports = function renderDashboard({ requisitions, env }) {
 </div>
 <div class="flex justify-between items-center mt-3">
 <div class="flex gap-4">
-<button class="flex items-center gap-1.5 text-label-sm text-outline hover:text-on-surface transition-colors">
+<input type="file" id="chat-file-input" style="display:none;" onchange="uploadChatAttachment(this)" />
+<button onclick="document.getElementById('chat-file-input').click()" class="flex items-center gap-1.5 text-label-sm text-outline hover:text-on-surface transition-colors">
 <span class="material-symbols-outlined text-[18px]">attach_file</span>
                                     Attach
                                 </button>
-<button class="flex items-center gap-1.5 text-label-sm text-outline hover:text-on-surface transition-colors">
+<button id="chat-mic-btn" onclick="toggleVoiceRecord()" class="flex items-center gap-1.5 text-label-sm text-outline hover:text-error transition-colors">
 <span class="material-symbols-outlined text-[18px]">mic</span>
-                                    Audio
+                                    <span id="chat-mic-text">Audio</span>
                                 </button>
 </div>
 <span class="text-[10px] text-outline uppercase tracking-wider">ViKLAR secure encrypted chat</span>
@@ -845,6 +868,282 @@ module.exports = function renderDashboard({ requisitions, env }) {
             const titleSpan = btn.querySelector('span:nth-child(2)');
             if(titleSpan) {
                 document.getElementById('view-title').innerText = titleSpan.innerText;
+            }
+            
+            if (id === 'chat' && chatUsers.length === 0) {
+                loadChatUsers();
+            }
+        }
+
+        // --- Requisitions View Functions ---
+        function filterRequisitions() {
+            const query = document.getElementById('req-search-input').value.toLowerCase();
+            const status = document.getElementById('req-status-filter').value.toLowerCase();
+            
+            const rows = document.querySelectorAll('.req-row');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const searchData = row.getAttribute('data-search');
+                const rowStatus = row.getAttribute('data-status').toLowerCase();
+                
+                const matchesSearch = searchData.includes(query);
+                const matchesStatus = status === 'all' || rowStatus.includes(status);
+                
+                if (matchesSearch && matchesStatus) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            document.getElementById('req-visible-count').innerText = visibleCount;
+        }
+
+        function exportRequisitionsCSV() {
+            const rows = document.querySelectorAll('#requisitions-table-full tr');
+            let csv = [];
+            rows.forEach(row => {
+                if (row.style.display !== 'none') {
+                    const cols = row.querySelectorAll('th, td');
+                    const rowData = [];
+                    cols.forEach((col, index) => {
+                        if (index < cols.length - 1) { // Skip actions column
+                            rowData.push('"' + col.innerText.replace(/"/g, '""').trim() + '"');
+                        }
+                    });
+                    csv.push(rowData.join(','));
+                }
+            });
+            
+            const csvContent = "data:text/csv;charset=utf-8," + csv.join("\\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "requisitions.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- Chat Functions ---
+        let activeChatUser = null;
+        let chatPollInterval = null;
+        let chatUsers = [];
+
+        async function loadChatUsers() {
+            try {
+                const res = await fetch('/api/users');
+                const users = await res.json();
+                chatUsers = users.filter(u => u.phone !== currentUser.phone);
+                
+                const list = document.getElementById('chat-user-list');
+                list.innerHTML = '';
+                
+                chatUsers.forEach(u => {
+                    const el = document.createElement('div');
+                    el.className = "px-4 py-3 hover:bg-surface-container-low cursor-pointer transition-colors border-l-4 border-transparent";
+                    el.onclick = () => openChat(u);
+                    el.id = 'chat-contact-' + u.phone;
+                    el.innerHTML = `
+                        <div class="flex gap-3">
+                            <div class="shrink-0 bg-secondary-container text-white w-12 h-12 rounded-full flex items-center justify-center font-bold">
+                                ${u.name[0].toUpperCase()}
+                            </div>
+                            <div class="flex-1 min-w-0 flex flex-col justify-center">
+                                <h4 class="font-label-bold text-on-surface truncate">${u.name}</h4>
+                                <p class="text-[11px] text-on-surface-variant">${u.department}</p>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(el);
+                });
+            } catch (e) {
+                console.error('Failed to load chat users', e);
+            }
+        }
+
+        async function openChat(user) {
+            activeChatUser = user;
+            
+            // Highlight active user
+            document.querySelectorAll('#chat-user-list > div').forEach(el => el.classList.replace('border-primary', 'border-transparent'));
+            const activeEl = document.getElementById('chat-contact-' + user.phone);
+            if (activeEl) activeEl.classList.replace('border-transparent', 'border-primary');
+            
+            // Update header
+            const header = document.querySelector('#view-chat section.bg-white .h-16');
+            if (header) {
+                header.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="relative w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-white font-bold">
+                            ${user.name[0].toUpperCase()}
+                            <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success border-2 border-white rounded-full"></div>
+                        </div>
+                        <div>
+                            <h3 class="font-label-bold text-on-surface leading-none">${user.name}</h3>
+                            <span class="text-label-sm text-success">Active Now</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 text-outline">
+                        <button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">call</span></button>
+                        <button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">videocam</span></button>
+                        <button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">info</span></button>
+                    </div>
+                `;
+            }
+            
+            pollChatMessages();
+            if (chatPollInterval) clearInterval(chatPollInterval);
+            chatPollInterval = setInterval(pollChatMessages, 3000);
+        }
+
+        async function pollChatMessages() {
+            if (!activeChatUser) return;
+            try {
+                const res = await fetch(\`/api/chat/\${currentUser.phone}/\${activeChatUser.phone}\`);
+                const messages = await res.json();
+                
+                const container = document.getElementById('chat-messages-container');
+                const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+                
+                container.innerHTML = '';
+                if (messages.length === 0) {
+                    container.innerHTML = '<div class="flex h-full items-center justify-center text-outline font-body-md">Say hi to ' + activeChatUser.name + '</div>';
+                }
+                
+                messages.forEach(m => {
+                    const isMe = m.sender === currentUser.phone;
+                    
+                    let contentHtml = '';
+                    if (m.content) contentHtml += \`<div class="bg-\${isMe ? 'primary text-white' : 'surface-container text-on-surface'} px-4 py-3 rounded-2xl \${isMe ? 'rounded-br-none' : 'rounded-bl-none'} text-body-md shadow-sm mb-1">\${m.content}</div>\`;
+                    
+                    if (m.attachmentUrl) {
+                        if (m.attachmentType === 'image') {
+                            contentHtml += \`<img src="\${m.attachmentUrl}" class="rounded-xl max-w-[200px] mt-2 border border-outline-variant/30">\`;
+                        } else if (m.attachmentType === 'audio') {
+                            contentHtml += \`<audio controls src="\${m.attachmentUrl}" class="mt-2 h-10 max-w-[200px]"></audio>\`;
+                        } else {
+                            contentHtml += \`<a href="\${m.attachmentUrl}" target="_blank" class="text-sm underline mt-2 inline-block">📎 Attached File</a>\`;
+                        }
+                    }
+                    
+                    const timeStr = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    
+                    container.innerHTML += \`
+                        <div class="flex \${isMe ? 'flex-col items-end ml-auto' : 'items-end'} gap-1 max-w-[80%] mb-4">
+                            \${contentHtml}
+                            <div class="flex items-center gap-1 \${isMe ? 'mr-2' : 'ml-2'}">
+                                <span class="text-[10px] text-outline">\${timeStr}</span>
+                                \${isMe ? \`<span class="material-symbols-outlined text-[12px] \${m.read ? 'text-primary' : 'text-outline'}" style="font-variation-settings: 'FILL' 1;">done_all</span>\` : ''}
+                            </div>
+                        </div>
+                    \`;
+                });
+                
+                if (isAtBottom) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            } catch(e) {}
+        }
+
+        async function sendChatMessage() {
+            if (!activeChatUser) return alert('Select a user to chat with first.');
+            const input = document.getElementById('chat-input');
+            const content = input.value.trim();
+            if (!content) return;
+            
+            input.value = '';
+            
+            try {
+                await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sender: currentUser.phone,
+                        recipient: activeChatUser.phone,
+                        content: content
+                    })
+                });
+                pollChatMessages();
+            } catch(e) {
+                alert('Failed to send message');
+            }
+        }
+
+        async function uploadChatAttachment(input) {
+            if (!activeChatUser) return alert('Select a user to chat with first.');
+            if (!input.files || !input.files[0]) return;
+            
+            const file = input.files[0];
+            let type = 'file';
+            if (file.type.startsWith('image/')) type = 'image';
+            if (file.type.startsWith('video/')) type = 'video';
+            if (file.type.startsWith('audio/')) type = 'audio';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('sender', currentUser.phone);
+            formData.append('recipient', activeChatUser.phone);
+            formData.append('type', type);
+            
+            try {
+                const container = document.getElementById('chat-messages-container');
+                container.innerHTML += '<div class="text-right text-xs text-outline italic w-full">Uploading file...</div>';
+                container.scrollTop = container.scrollHeight;
+                
+                await fetch('/api/chat/upload', { method: 'POST', body: formData });
+                input.value = '';
+                pollChatMessages();
+            } catch(e) {
+                alert('Upload failed');
+            }
+        }
+
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        async function toggleVoiceRecord() {
+            if (!activeChatUser) return alert('Select a user to chat with first.');
+            
+            if (isRecording) {
+                mediaRecorder.stop();
+                document.getElementById('chat-mic-text').innerText = 'Audio';
+                document.getElementById('chat-mic-btn').classList.remove('text-error', 'animate-pulse');
+                isRecording = false;
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    
+                    mediaRecorder.addEventListener("dataavailable", event => {
+                        audioChunks.push(event.data);
+                    });
+                    
+                    mediaRecorder.addEventListener("stop", async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const file = new File([audioBlob], "voicenote.webm", { type: 'audio/webm' });
+                        
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        
+                        const fileInput = document.getElementById('chat-file-input');
+                        fileInput.files = dataTransfer.files;
+                        uploadChatAttachment(fileInput);
+                        
+                        stream.getTracks().forEach(track => track.stop());
+                    });
+                    
+                    mediaRecorder.start();
+                    document.getElementById('chat-mic-text').innerText = 'Recording...';
+                    document.getElementById('chat-mic-btn').classList.add('text-error', 'animate-pulse');
+                    isRecording = true;
+                } catch(e) {
+                    alert('Microphone access denied or not available.');
+                }
             }
         }
 
